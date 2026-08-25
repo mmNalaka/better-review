@@ -1,0 +1,26 @@
+import { homedir } from "node:os";
+import { join } from "node:path";
+
+export const SERVER_PORT = Number(process.env.BR_SERVER_PORT ?? 4317);
+export const WEB_PORT = Number(process.env.BR_WEB_PORT ?? 5173);
+
+/** Directories scanned to find a local clone for a given owner/repo. */
+export const CLONE_ROOTS: readonly string[] = (
+  process.env.BR_CLONE_ROOTS ?? join(homedir(), "code")
+)
+  .split(":")
+  .filter(Boolean);
+
+/**
+ * PR heads are fetched into this private ref namespace rather than a branch,
+ * so nothing the user might have checked out is ever touched. See ticket 02.
+ */
+export const PR_REF_NAMESPACE = "refs/prreview";
+
+/**
+ * Where PR worktrees are materialised. Language servers need real files on
+ * disk (ticket 02), and the user's own working tree is never touched.
+ */
+export const WORKTREE_ROOT =
+  process.env.BR_WORKTREE_ROOT ??
+  join(homedir(), "Library", "Application Support", "better-review", "worktrees");

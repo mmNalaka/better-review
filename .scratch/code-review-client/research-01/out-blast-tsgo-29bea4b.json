@@ -1,0 +1,48 @@
+{
+  "repo": "/Users/nalaka.manathunga/code/iam-mono",
+  "commit": "29bea4b",
+  "server": "tsgo",
+  "maxDepth": 3,
+  "changedCodeFiles": [
+    "services/iam-api/src/modules/role-assignments/role-assignments.service.test.ts (190 lines)",
+    "services/iam-api/src/modules/role-assignments/role-assignments.service.ts (58 lines)"
+  ],
+  "projectReadyMs": 1111,
+  "level0Ms": 91,
+  "bfsMs": 142,
+  "totalMsFromSpawn": 1469,
+  "incomingCallsRequestsIssued": 6,
+  "msPerIncomingCallsRequest": 23.7,
+  "symbolsPerDepth": [
+    {
+      "depth": 0,
+      "n": 3,
+      "ms": 91
+    },
+    {
+      "depth": 1,
+      "n": 3,
+      "ms": 140,
+      "incomingCallsRequests": 3
+    },
+    {
+      "depth": 2,
+      "n": 0,
+      "ms": 2,
+      "incomingCallsRequests": 3
+    }
+  ],
+  "totalSymbolsInRadius": 6,
+  "filesInRadius": 4,
+  "level0Symbols": [
+    "services/iam-api/src/modules/role-assignments/role-assignments.service.test.ts:1469 scoped",
+    "services/iam-api/src/modules/role-assignments/role-assignments.service.ts:590 upsertSiteScopedAssignment",
+    "services/iam-api/src/modules/role-assignments/role-assignments.service.ts:720 listScopedAssignments"
+  ],
+  "fileDepths": [
+    "L0 services/iam-api/src/modules/role-assignments/role-assignments.service.test.ts",
+    "L0 services/iam-api/src/modules/role-assignments/role-assignments.service.ts",
+    "L1 services/iam-api/src/modules/role-assignments/role-assignments.controller.test.ts",
+    "L1 services/iam-api/src/modules/role-assignments/role-assignments.controller.ts"
+  ]
+}

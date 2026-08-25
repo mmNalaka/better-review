@@ -1,0 +1,113 @@
+{
+  "overlay": {
+    "projectReadyMs": 2982,
+    "symbolsSeen": [
+      "Kysely",
+      "Database",
+      "withTransaction",
+      "prOnlyHelper",
+      "withTransaction() callback"
+    ],
+    "prOnlySymbolVisible": true,
+    "definitionFromOverlayLine": [
+      "services/iam-api/src/db/transaction.ts:11"
+    ],
+    "prepareOnOverlayOnlySymbol": [
+      "prOnlyHelper"
+    ],
+    "incomingCallsIncludesOverlayCaller": true,
+    "incomingCallers": [
+      "createAssignment",
+      "createRole",
+      "deleteAssignment",
+      "deleteRole",
+      "insertRole",
+      "prOnlyHelper",
+      "promoteRole",
+      "updateAssignmentScope",
+      "updateRole",
+      "updateRole"
+    ],
+    "afterRevertIncludesOverlayCaller": false
+  },
+  "scaleTS": {
+    "name": "tsgo @ iam-mono withTransaction",
+    "root": "/Users/nalaka.manathunga/code/iam-mono",
+    "seed": "export async function withTransaction",
+    "projectReadyMs": 3217,
+    "totalBfsMs": 468,
+    "incomingCallsRequests": 22,
+    "msPerRequest": 21.3,
+    "totalSymbols": 22,
+    "totalFiles": 13,
+    "perDepth": [
+      {
+        "depth": 1,
+        "requests": 1,
+        "newSymbols": 9,
+        "ms": 34
+      },
+      {
+        "depth": 2,
+        "requests": 9,
+        "newSymbols": 7,
+        "ms": 223
+      },
+      {
+        "depth": 3,
+        "requests": 7,
+        "newSymbols": 5,
+        "ms": 91
+      },
+      {
+        "depth": 4,
+        "requests": 5,
+        "newSymbols": 0,
+        "ms": 120
+      }
+    ]
+  },
+  "scaleGo": {
+    "name": "gopls @ auth CreateUser",
+    "root": "/Users/nalaka.manathunga/code/auth",
+    "seed": "func CreateUser",
+    "projectReadyMs": 12305,
+    "totalBfsMs": 8300,
+    "incomingCallsRequests": 5,
+    "msPerRequest": 1660,
+    "totalSymbols": 6,
+    "totalFiles": 5,
+    "perDepth": [
+      {
+        "depth": 1,
+        "requests": 1,
+        "newSymbols": 1,
+        "ms": 2633
+      },
+      {
+        "depth": 2,
+        "requests": 1,
+        "newSymbols": 1,
+        "ms": 2957
+      },
+      {
+        "depth": 3,
+        "requests": 1,
+        "newSymbols": 1,
+        "ms": 1568
+      },
+      {
+        "depth": 4,
+        "requests": 1,
+        "newSymbols": 1,
+        "ms": 612
+      },
+      {
+        "depth": 5,
+        "requests": 1,
+        "newSymbols": 1,
+        "ms": 529
+      }
+    ]
+  }
+}
