@@ -109,17 +109,17 @@ export function Explorer({
     return (
       <nav className="explorer" aria-label="Whole repo">
         <div className="exhead">
-          <div className="toggles">
-            <button className="tog" aria-pressed={false} onClick={() => setMode("changed")}>
+          <div className="seg">
+            <button aria-pressed={false} onClick={() => setMode("changed")}>
               Changed files
             </button>
-            <button className="tog" aria-pressed>Whole repo</button>
+            <button aria-pressed>Whole repo</button>
           </div>
-          <div className="toggles">
-            <button className="tog" aria-pressed={!byRing} onClick={() => setByRing(false)}>
+          <div className="seg">
+            <button aria-pressed={!byRing} onClick={() => setByRing(false)}>
               by path
             </button>
-            <button className="tog" aria-pressed={byRing} onClick={() => setByRing(true)}>
+            <button aria-pressed={byRing} onClick={() => setByRing(true)}>
               by ring
             </button>
             {!rings.done && <span className="eyebrow">working…</span>}
@@ -147,9 +147,9 @@ export function Explorer({
   return (
     <nav className="explorer" aria-label="Changed files">
       <div className="exhead">
-        <div className="toggles">
-          <button className="tog" aria-pressed>Changed files</button>
-          <button className="tog" aria-pressed={false} onClick={() => setMode("repo")}>
+        <div className="seg">
+          <button aria-pressed>Changed files</button>
+          <button aria-pressed={false} onClick={() => setMode("repo")}>
             Whole repo
           </button>
         </div>

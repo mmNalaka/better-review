@@ -34,7 +34,7 @@ export function App() {
   const [review, setReview] = useState<ReviewPayload | null>(null);
   const [marks, setMarks] = useState<Marks>(emptyMarks);
   const [trail, setTrail] = useState<readonly Hop[]>([]);
-  const [text, setText] = useState<string | null>(null);
+  const [body, setBody] = useState<{ path: string; text: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -58,6 +58,7 @@ export function App() {
   );
 
   const here = trail.at(-1) ?? null;
+  const isChanged = here !== null && changedPaths.has(here.path);
 
   const open = useCallback(async (prRef: string, restore: string | null) => {
     setBusy(true);
@@ -65,7 +66,7 @@ export function App() {
     setNotice(null);
     setReview(null);
     setTrail([]);
-    setText(null);
+    setBody(null);
     try {
       const payload = await loadReview(prRef);
       setReview(payload);
@@ -88,13 +89,12 @@ export function App() {
   // Load the file the current hop points at.
   useEffect(() => {
     if (!review || !here) {
-      setText(null);
+      setBody(null);
       return;
     }
     let live = true;
-    setText(null);
     void loadBlob(review.pr.owner, review.pr.repo, review.pr.headSha, here.path)
-      .then((blob) => live && setText(blob.text))
+      .then((blob) => live && setBody({ path: here.path, text: blob.text }))
       .catch((cause: unknown) => {
         if (live) setError(cause instanceof Error ? cause.message : String(cause));
       });
@@ -110,7 +110,6 @@ export function App() {
       return;
     }
     let live = true;
-    setDiff(null);
     setDiffLoading(true);
     void loadDiff(review.pr.owner, review.pr.repo, review.pr.number, review.pr.headSha, here.path)
       .then((result) => live && setDiff(result))
@@ -236,18 +235,23 @@ export function App() {
         onBackToChanges={() => setTrail([])}
       />
 
-      {here && changedPaths.has(here.path) && (
+      {review && (
         <div className="modebar">
-          {(["split", "diff", "file"] as const).map((option) => (
-            <button
-              key={option}
-              className="tog"
-              aria-pressed={mode === option}
-              onClick={() => setMode(option)}
-            >
-              {option === "split" ? "Diff + file" : option === "diff" ? "Diff only" : "Whole file"}
-            </button>
-          ))}
+          <span className="seg-label">View</span>
+          <div className="seg">
+            {(["split", "diff", "file"] as const).map((option) => (
+              <button
+                key={option}
+                aria-pressed={isChanged ? mode === option : option === "file"}
+                disabled={!isChanged}
+                title={isChanged ? undefined : "This file is not changed by the pull request"}
+                onClick={() => setMode(option)}
+              >
+                {option === "split" ? "Diff + file" : option === "diff" ? "Diff only" : "Whole file"}
+              </button>
+            ))}
+          </div>
+          {diffLoading && <span className="seg-label">reading diff…</span>}
         </div>
       )}
 
@@ -255,7 +259,7 @@ export function App() {
         <CommitsPanel commits={review.commits} onClose={() => setShowCommits(false)} />
       )}
 
-      <div className={`panes mode-${here && changedPaths.has(here.path) ? mode : "file"}`}>
+      <div className={`panes mode-${isChanged ? mode : "file"}`}>
         {review ? (
           <Explorer
             changed={review.changed}
@@ -270,13 +274,13 @@ export function App() {
             <p className="pane-empty">Open a pull request to begin.</p>
           </nav>
         )}
-        {here && changedPaths.has(here.path) && mode !== "file" && (
+        {isChanged && mode !== "file" && (
           <DiffPane diff={diff} loading={diffLoading} onJump={setJumpLine} />
         )}
-        {!(here && changedPaths.has(here.path) && mode === "diff") && (
+        {!(isChanged && mode === "diff") && (
         <CodePane
           path={here?.path ?? null}
-          text={text}
+          text={body && here && body.path === here.path ? body.text : null}
           ring={
             ringHere?.kind === "changed"
               ? "changed"

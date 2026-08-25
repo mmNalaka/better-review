@@ -105,7 +105,19 @@ export function CodePane({
   }, [focusLine, lines]);
 
   if (!path) return <div className="pane-empty">Pick a file to read it.</div>;
-  if (text === null) return <div className="pane-empty">Loading {path}…</div>;
+  if (text === null) {
+    // Fills the pane rather than collapsing it: a one-line message made the
+    // layout jump on every file change.
+    return (
+      <div className="codepane">
+        <header className="filehead">
+          <span className="fname">{path}</span>
+          <span className="resolving">reading…</span>
+        </header>
+        <div className="pane-loading" />
+      </div>
+    );
+  }
 
   return (
     <div className="codepane">
