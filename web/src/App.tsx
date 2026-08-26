@@ -9,6 +9,7 @@ import {
   type ReviewPayload,
 } from "./api";
 import { CommitsPanel } from "./CommitsPanel";
+import { Branches } from "./Branches";
 import { CopyPath } from "./CopyPath";
 import { DiffPane } from "./DiffPane";
 import { useExplorerWidth } from "./useExplorerWidth";
@@ -230,12 +231,7 @@ export function App() {
         </form>
         {review && (
           <>
-            <span className="pr-branches" title={`${review.pr.headRef} into ${review.pr.baseRef}`}>
-              {review.pr.forkOf && <span className="fork">{review.pr.forkOf}</span>}
-              <span className="branch head">{review.pr.headRef}</span>
-              <span className="into">&rarr;</span>
-              <span className="branch base">{review.pr.baseRef}</span>
-            </span>
+            <Branches pr={review.pr} />
             {review.pr.draft && <span className="badge draft">draft</span>}
             {review.pr.state !== "open" && <span className="badge">{review.pr.state}</span>}
             <span className="pr-title">{review.pr.title}</span>

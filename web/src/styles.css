@@ -560,17 +560,31 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
 /* ── PR branches (top bar) ───────────────────────────────────── */
 
 .pr-branches {
-  display: flex; align-items: center; gap: 5px; flex: 0 1 auto; min-width: 0;
+  display: flex; align-items: center; gap: 5px; flex: 0 0 auto;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
 }
 
+/* Never truncated: a half-shown branch name cannot be typed or trusted.
+   The PR title yields space instead — it is the more expendable of the two. */
 .branch {
-  padding: 2px 7px; border-radius: 4px;
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+  padding: 2px 7px; border-radius: 4px; cursor: pointer;
   background: var(--surface-2); border: 1px solid var(--line);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 22ch;
+  white-space: nowrap; flex: 0 0 auto;
 }
 
+.branch:hover { border-color: var(--accent); color: var(--accent); }
+.branch:active { background: var(--surface-3); }
+.branch:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
 .branch.head { color: var(--ink); }
+
+.copied-flash {
+  font-size: 10.5px; color: var(--accent); white-space: nowrap;
+}
+
+.copied-flash.failed { color: var(--del); }
 .branch.base { color: var(--muted); }
 .into { color: var(--faint); }
 
