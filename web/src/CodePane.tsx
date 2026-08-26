@@ -1,24 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  createHighlighter,
-  type BundledLanguage,
-  type Highlighter,
-  type ThemedToken,
-} from "shiki";
-
-const THEME_LIGHT = "github-light";
-const THEME_DARK = "github-dark";
-
-const LANGS = [
-  "go", "typescript", "tsx", "javascript", "json", "yaml",
-  "markdown", "hcl", "sql", "php", "python", "bash",
-] as const;
-
-const BY_EXTENSION: Readonly<Record<string, BundledLanguage>> = {
-  go: "go", ts: "typescript", tsx: "tsx", js: "javascript", jsx: "tsx",
-  json: "json", yaml: "yaml", yml: "yaml", md: "markdown", mdx: "markdown",
-  tf: "hcl", sql: "sql", php: "php", py: "python", sh: "bash",
-};
+import { tokenise, type ThemedToken } from "./highlighter";
 
 /**
  * Shiki tokens bundle whitespace and punctuation with identifiers, so a token
@@ -45,17 +26,6 @@ function splitToken(content: string, start: number): readonly Piece[] {
   return pieces;
 }
 
-const langFor = (path: string): BundledLanguage | null =>
-  BY_EXTENSION[path.slice(path.lastIndexOf(".") + 1).toLowerCase()] ?? null;
-
-let highlighterPromise: Promise<Highlighter> | null = null;
-
-const getHighlighter = (): Promise<Highlighter> =>
-  (highlighterPromise ??= createHighlighter({ themes: [THEME_LIGHT, THEME_DARK], langs: [...LANGS] }));
-
-const prefersDark = () =>
-  typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches;
-
 interface CodePaneProps {
   readonly path: string | null;
   readonly text: string | null;
@@ -71,7 +41,7 @@ interface CodePaneProps {
 export function CodePane({
   path, text, ring, focusLine, changedLines, resolving, notice, onSymbolClick,
 }: CodePaneProps) {
-  const [lines, setLines] = useState<readonly ThemedToken[][]>([]);
+  const [lines, setLines] = useState<readonly (readonly ThemedToken[])[]>([]);
 
   useEffect(() => {
     if (text === null || path === null) {
@@ -80,19 +50,8 @@ export function CodePane({
     }
     let live = true;
     void (async () => {
-      try {
-        const highlighter = await getHighlighter();
-        const lang = langFor(path);
-        const known = lang !== null && highlighter.getLoadedLanguages().includes(lang);
-        const { tokens } = highlighter.codeToTokens(text, {
-          lang: known ? lang : "text",
-          theme: prefersDark() ? THEME_DARK : THEME_LIGHT,
-        });
-        if (live) setLines(tokens);
-      } catch {
-        // Highlighting is decoration: fall back to plain lines rather than blanking the pane.
-        if (live) setLines(text.split("\n").map((line) => [{ content: line } as ThemedToken]));
-      }
+      const rows = await tokenise(text, path);
+      if (live) setLines(rows);
     })();
     return () => {
       live = false;

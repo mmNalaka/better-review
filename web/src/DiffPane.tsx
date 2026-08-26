@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import type { FileDiff } from "./api";
+import type { FileDiff, Hunk } from "./api";
+import { tokenise, type ThemedToken } from "./highlighter";
 
 /**
  * Ticket 14: the changed hunks, beside the whole file rather than instead of it.
@@ -9,6 +10,44 @@ import type { FileDiff } from "./api";
 
 /** Some hunks in a long-lived branch carry ten commits. Show the story, not the log. */
 const SHOWN = 2;
+
+type Rows = readonly (readonly ThemedToken[])[];
+
+/**
+ * Highlight each hunk's old and new sides as separate blocks, then take every
+ * line's tokens from the side it belongs to.
+ *
+ * Not per line: a line alone loses the context a tokeniser needs (a block
+ * comment, an unterminated string). Not the hunk as one block either — mixing
+ * removed and added lines produces source that never existed and tokenises
+ * badly. Two coherent sides is the closest either half gets to real syntax.
+ */
+async function highlightHunk(hunk: Hunk, path: string): Promise<Rows> {
+  const oldText: string[] = [];
+  const newText: string[] = [];
+  const side: { from: "old" | "new"; index: number }[] = [];
+
+  for (const line of hunk.lines) {
+    if (line.kind === "removed") {
+      side.push({ from: "old", index: oldText.length });
+      oldText.push(line.text);
+    } else if (line.kind === "added") {
+      side.push({ from: "new", index: newText.length });
+      newText.push(line.text);
+    } else {
+      side.push({ from: "new", index: newText.length });
+      oldText.push(line.text);
+      newText.push(line.text);
+    }
+  }
+
+  const [oldRows, newRows] = await Promise.all([
+    oldText.length > 0 ? tokenise(oldText.join("\n"), path) : Promise.resolve([]),
+    newText.length > 0 ? tokenise(newText.join("\n"), path) : Promise.resolve([]),
+  ]);
+
+  return side.map(({ from, index }) => (from === "old" ? oldRows[index] : newRows[index]) ?? []);
+}
 
 const MARKER: Readonly<Record<string, string>> = {
   added: "+",
@@ -24,6 +63,25 @@ interface DiffPaneProps {
 
 export function DiffPane({ diff, loading, onJump }: DiffPaneProps) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const [rows, setRows] = useState<ReadonlyMap<string, Rows>>(new Map());
+
+  useEffect(() => {
+    if (!diff || diff.binary) {
+      setRows(new Map());
+      return;
+    }
+    let live = true;
+    void (async () => {
+      const entries = await Promise.all(
+        diff.hunks.map(async (hunk) => [hunk.header, await highlightHunk(hunk, diff.path)] as const),
+      );
+      if (live) setRows(new Map(entries));
+    })();
+    return () => {
+      live = false;
+    };
+  }, [diff]);
+
   const toggle = (header: string) =>
     setExpanded((current) => {
       const next = new Set(current);
@@ -72,14 +130,25 @@ export function DiffPane({ diff, loading, onJump }: DiffPaneProps) {
                 )}
               </div>
             )}
-            {hunk.lines.map((line, index) => (
-              <div className={`dl ${line.kind}`} key={index}>
-                <span className="dl-old">{line.oldLine ?? ""}</span>
-                <span className="dl-new">{line.newLine ?? ""}</span>
-                <span className="dl-mark">{MARKER[line.kind]}</span>
-                <span className="dl-text">{line.text || " "}</span>
-              </div>
-            ))}
+            {hunk.lines.map((line, index) => {
+              const tokens = rows.get(hunk.header)?.[index];
+              return (
+                <div className={`dl ${line.kind}`} key={index}>
+                  <span className="dl-old">{line.oldLine ?? ""}</span>
+                  <span className="dl-new">{line.newLine ?? ""}</span>
+                  <span className="dl-mark">{MARKER[line.kind]}</span>
+                  <span className="dl-text">
+                    {tokens && tokens.length > 0
+                      ? tokens.map((token, i) => (
+                          <span key={i} style={token.color ? { color: token.color } : undefined}>
+                            {token.content}
+                          </span>
+                        ))
+                      : line.text || " "}
+                  </span>
+                </div>
+              );
+            })}
           </section>
         );
       })}
