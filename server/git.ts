@@ -163,6 +163,29 @@ export async function commits(dir: string, base: string, head: string): Promise<
     });
 }
 
+/** git's well-known empty tree object, for diffing a root commit. */
+const EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+
+/**
+ * The parent a commit should be diffed against — its first parent, or the
+ * empty tree when it has none.
+ */
+export async function parentOf(dir: string, sha: string): Promise<string> {
+  const parents = (await git(dir, "rev-list", "--parents", "-n", "1", sha)).trim().split(/\s+/);
+  return parents[1] ?? EMPTY_TREE;
+}
+
+/**
+ * The files one commit changed, rather than the whole PR.
+ * Ticket 05 revision: reviewing commit by commit is optional, not the default.
+ */
+export async function changedFilesInCommit(
+  dir: string,
+  sha: string,
+): Promise<readonly ChangedFile[]> {
+  return changedFiles(dir, await parentOf(dir, sha), sha);
+}
+
 export async function readBlob(dir: string, ref: string, path: string): Promise<string> {
   return git(dir, "cat-file", "-p", `${ref}:${path}`);
 }

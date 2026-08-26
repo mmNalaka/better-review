@@ -41,8 +41,10 @@ export async function fetchPullRequest(
   if (code !== 0) {
     const detail = stderr.trim();
     if (detail.includes("404")) {
+      // Keep gh's own words: the friendly message alone hid a keychain failure
+      // that had nothing to do with the PR existing.
       throw new GitHubError(
-        `${owner}/${repo}#${number} not found — it may not exist, or your gh token may not have access.`,
+        `${owner}/${repo}#${number} not found — it may not exist, or your gh token may not have access. gh said: ${detail}`,
       );
     }
     throw new GitHubError(`gh api failed: ${detail || "no stderr"}`);

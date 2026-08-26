@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "r
 
 import {
   loadBlob,
+  loadCommitFiles,
   loadDiff,
   loadReview,
   resolveDefinition,
+  type ChangedFile,
   type FileDiff,
   type ReviewPayload,
 } from "./api";
@@ -47,6 +49,14 @@ export function App() {
   const [showCommits, setShowCommits] = useState(false);
   const explorer = useExplorerWidth();
 
+  /**
+   * Optional: narrow the whole review to one commit. Ticket 05 rejected this as
+   * the default (84 commits is 84 passes) but it earns its place as a mode —
+   * the "address review feedback" commit here is 3 files, not 32.
+   */
+  const [commitFilter, setCommitFilter] = useState<string | null>(null);
+  const [commitFiles, setCommitFiles] = useState<readonly ChangedFile[] | null>(null);
+
   // Ticket 10: the radius starts as soon as the PR is open, and streams in.
   const rings = useRings(
     review?.pr.owner ?? null,
@@ -56,10 +66,31 @@ export function App() {
   );
   const [resolving, setResolving] = useState(false);
 
+  /** What the explorer lists: the whole PR, or just the selected commit. */
+  const visibleChanged = commitFilter && commitFiles ? commitFiles : (review?.changed ?? []);
+
   const changedPaths = useMemo(
-    () => new Set((review?.changed ?? []).map((file) => file.path)),
-    [review],
+    () => new Set(visibleChanged.map((file) => file.path)),
+    [visibleChanged],
   );
+
+  useEffect(() => {
+    if (!review || !commitFilter) {
+      setCommitFiles(null);
+      return;
+    }
+    let live = true;
+    void loadCommitFiles(
+      review.pr.owner, review.pr.repo, review.pr.number, review.pr.headSha, commitFilter,
+    )
+      .then((result) => live && setCommitFiles(result.changed))
+      .catch((cause: unknown) => {
+        if (live) setError(cause instanceof Error ? cause.message : String(cause));
+      });
+    return () => {
+      live = false;
+    };
+  }, [review, commitFilter]);
 
   const here = trail.at(-1) ?? null;
   const isChanged = here !== null && changedPaths.has(here.path);
@@ -117,14 +148,17 @@ export function App() {
     }
     let live = true;
     setDiffLoading(true);
-    void loadDiff(review.pr.owner, review.pr.repo, review.pr.number, review.pr.headSha, here.path)
+    void loadDiff(
+      review.pr.owner, review.pr.repo, review.pr.number, review.pr.headSha, here.path,
+      commitFilter,
+    )
       .then((result) => live && setDiff(result))
       .catch(() => live && setDiff(null))
       .finally(() => live && setDiffLoading(false));
     return () => {
       live = false;
     };
-  }, [review, here?.path, changedPaths]);
+  }, [review, here?.path, changedPaths, commitFilter]);
 
   const changedLines = useMemo(() => {
     const lines = new Set<number>();
@@ -235,6 +269,18 @@ export function App() {
             {review.pr.draft && <span className="badge draft">draft</span>}
             {review.pr.state !== "open" && <span className="badge">{review.pr.state}</span>}
             <span className="pr-title">{review.pr.title}</span>
+            {commitFilter && (
+              <button
+                className="badge filter"
+                onClick={() => {
+                  setCommitFilter(null);
+                  setTrail([]);
+                }}
+                title="Back to the whole pull request"
+              >
+                commit {commitFilter.slice(0, 7)} &times;
+              </button>
+            )}
             <span className="counts">
               <span><b>{review.changed.length}</b> changed</span>
               <button className="counts-link" onClick={() => setShowCommits((open) => !open)}>
@@ -275,7 +321,15 @@ export function App() {
       )}
 
       {review && showCommits && (
-        <CommitsPanel commits={review.commits} onClose={() => setShowCommits(false)} />
+        <CommitsPanel
+          commits={review.commits}
+          selected={commitFilter}
+          onSelect={(sha) => {
+            setCommitFilter(sha);
+            setTrail([]);
+          }}
+          onClose={() => setShowCommits(false)}
+        />
       )}
 
       <div
@@ -284,7 +338,7 @@ export function App() {
       >
         {review ? (
           <Explorer
-            changed={review.changed}
+            changed={visibleChanged}
             marks={marks}
             selected={here?.path ?? null}
             rings={rings}

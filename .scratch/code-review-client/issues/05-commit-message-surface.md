@@ -54,3 +54,44 @@ The `84 commits` count in the header is a button; it opens a panel with every co
 - **No PR description.** The panel shows commits only; the PR body is not fetched. Deliberate for now — it is one more API field, but it belongs beside the review, not in a commit list.
 - **No per-commit diff filtering**, by decision above.
 - Attribution is line-level via blame, so a hunk whose added lines were later reformatted attributes to the reformatting commit, not the original. Correct, occasionally unhelpful.
+
+## Revision — per-commit review, added as an option
+
+This ticket rejected filtering the diff to one commit. That judgement was about
+it as the *primary* workflow: at 84 commits by one author over a month, walking
+the branch chronologically means 84 passes over code that later commits rewrite.
+That reasoning still holds for the default.
+
+As an **optional mode** it is a different question, and the measurement supports
+it. Picking `0d1d102 refactor(scim): address PR #146 follow-up review comments`:
+
+| | whole PR | that commit |
+|---|---|---|
+| changed files | 32 | **3** |
+| hunks in `service/scim.go` | 8 | **5** |
+| diff lines in `service/scim.go` | 993 | **60** |
+
+Reading a 60-line follow-up commit on its own is obviously worth doing; reading
+all 84 that way is not. Both are now possible.
+
+### Built
+
+- `GET /api/commit-files?…&commit=<sha>` — the files one commit changed. Its
+  parent comes from `rev-list --parents`, falling back to git's empty-tree
+  object so a root commit still diffs.
+- `GET /api/diff?…&commit=<sha>` — diffs that commit against its own parent, and
+  attributes the hunks to it alone.
+- The commits panel gains **Review this commit** per commit and a
+  **Review the whole pull request** reset; a chip in the header names the active
+  commit and clears it.
+- Selecting a commit narrows the explorer, the diff, and the counts. The trail
+  resets, since a hop into code outside the commit would be misleading.
+
+### Not done
+
+- **Rings still cover the whole PR**, not the selected commit. A blast radius
+  scoped to one commit is a coherent idea and is not built.
+- Marks are not per-commit: marking a file reviewed while filtered marks the
+  file, not the file-within-that-commit. [04](./04-review-mark-model.md)'s
+  content-addressed hunk marks would make this well-defined; file-level marks do
+  not.

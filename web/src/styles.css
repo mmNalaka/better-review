@@ -600,3 +600,38 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
 }
 
 .badge.draft { background: var(--surface-3); color: var(--flag); }
+
+/* ── reviewing one commit (ticket 05 revision) ───────────────── */
+
+.commit-all, .commit-pick {
+  font: inherit; font-size: 11px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 5px;
+  background: var(--surface-2); color: var(--muted);
+  padding: 4px 9px;
+}
+
+.commit-all {
+  display: block; width: calc(100% - 28px); margin: 10px 14px; text-align: center;
+}
+
+.commit-pick { margin-top: 8px; }
+
+.commit-all:hover, .commit-pick:hover { border-color: var(--accent); color: var(--accent); }
+
+.commit-all[aria-pressed="true"], .commit-pick[aria-pressed="true"] {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+}
+
+.commit-all:focus-visible, .commit-pick:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
+
+.commit.sel { background: var(--surface-2); border-left: 2px solid var(--accent); }
+
+.badge.filter {
+  border: 0; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: none;
+}
+
+.badge.filter:hover { filter: brightness(1.1); }

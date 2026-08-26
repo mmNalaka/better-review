@@ -1,11 +1,13 @@
 import { SERVER_PORT } from "./config";
 import {
   changedFiles,
+  changedFilesInCommit,
   commits,
   fetchPrHead,
   findClone,
   listTree,
   mergeBase,
+  parentOf,
   readBlob,
 } from "./git";
 import { fetchPullRequest, parsePrRef } from "./github";
@@ -47,6 +49,16 @@ function requireRelativePath(url: URL): string {
     throw new BadRequest("Path must be repo-relative and may not traverse upward");
   }
   return path;
+}
+
+const SHA = /^[0-9a-f]{7,40}$/;
+
+/** Optional `commit=` — reviewing one commit rather than the whole PR. */
+function optionalCommit(url: URL): string | null {
+  const sha = url.searchParams.get("commit");
+  if (!sha) return null;
+  if (!SHA.test(sha)) throw new BadRequest("commit must be a hex sha");
+  return sha;
 }
 
 function requireInteger(url: URL, name: string): number {
@@ -113,6 +125,26 @@ const routes: Record<string, (url: URL) => Promise<Response>> = {
    * One hop. Resolves the symbol at a position to where it is defined,
    * against a worktree materialised at the PR head.
    */
+  /**
+   * The files one commit changed. Lets the explorer narrow to a single commit
+   * without re-fetching the whole review.
+   */
+  "/api/commit-files": async (url) => {
+    const { dir, owner, repo } = await resolveClone(url);
+    const number = requireInteger(url, "pr");
+    const rev = url.searchParams.get("rev");
+    const sha = optionalCommit(url);
+    if (!rev) throw new BadRequest("Missing rev");
+    if (!sha) throw new BadRequest("Missing commit");
+
+    const cached = reviewCache.get(cacheKey(owner, repo, number, rev));
+    if (!cached) throw new BadRequest("Open the pull request first");
+    if (!cached.commits.some((commit) => commit.sha.startsWith(sha))) {
+      throw new BadRequest("That commit is not part of this pull request");
+    }
+    return json({ changed: await changedFilesInCommit(dir, sha) });
+  },
+
   /** Hunks for one changed file, computed from the merge-base diff. */
   "/api/diff": async (url) => {
     const { dir, owner, repo } = await resolveClone(url);
@@ -123,6 +155,15 @@ const routes: Record<string, (url: URL) => Promise<Response>> = {
 
     const cached = reviewCache.get(cacheKey(owner, repo, number, rev));
     if (!cached) throw new BadRequest("Open the pull request first");
+    const sha = optionalCommit(url);
+    if (sha) {
+      // One commit only: diff it against its own parent, and attribute to it.
+      const commit = cached.commits.find((entry) => entry.sha.startsWith(sha));
+      if (!commit) throw new BadRequest("That commit is not part of this pull request");
+      const base = await parentOf(dir, sha);
+      return json(await fileDiff(dir, base, sha, path, "M", [commit]));
+    }
+
     const file = cached.changed.find((entry) => entry.path === path);
     if (!file) throw new BadRequest(`${path} is not changed by this pull request`);
 

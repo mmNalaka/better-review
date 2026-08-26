@@ -1,6 +1,7 @@
 import type { ReviewPayload } from "../../server/types";
 
 export type { ChangedFile, Commit, PullRequest, ReviewPayload } from "../../server/types";
+import type { ChangedFile } from "../../server/types";
 export type { DiffLine, FileDiff, Hunk } from "../../server/diff";
 
 export interface Definition {
@@ -40,8 +41,19 @@ export const loadDiff = (
   pr: number,
   rev: string,
   path: string,
+  commit?: string | null,
 ): Promise<import("../../server/diff").FileDiff> =>
-  getJson("/api/diff", { owner, repo, pr, rev, path });
+  getJson("/api/diff", { owner, repo, pr, rev, path, ...(commit ? { commit } : {}) });
+
+/** Files changed by one commit, for reviewing commit by commit. */
+export const loadCommitFiles = (
+  owner: string,
+  repo: string,
+  pr: number,
+  rev: string,
+  commit: string,
+): Promise<{ changed: readonly ChangedFile[] }> =>
+  getJson("/api/commit-files", { owner, repo, pr, rev, commit });
 
 export const resolveDefinition = (
   owner: string,
