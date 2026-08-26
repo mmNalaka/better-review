@@ -107,7 +107,7 @@ body {
   border-bottom: 1px solid var(--line); color: var(--del); font-size: 12.5px;
 }
 
-.panes { display: grid; grid-template-columns: minmax(320px, 400px) 1fr; overflow: hidden; flex: 1; min-height: 0; }
+.panes { display: grid; overflow: hidden; flex: 1; min-height: 0; --explorer-w: 320px; }
 
 @media (max-width: 820px) { .panes { grid-template-columns: 1fr; } }
 
@@ -169,12 +169,27 @@ body {
 .kind.D { color: var(--del); }
 .kind.R { color: var(--muted); }
 
+/* The filename is what identifies the row, so it never truncates — only the
+   directory does. Ellipsising the end cut the filename and kept the folder,
+   which is backwards. */
 .name {
-  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1; min-width: 0; display: flex; white-space: nowrap;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
 }
 
-.path-prefix { color: var(--faint); }
+/* shrink-factor 1 against the prefix's 999: the directory collapses almost
+   entirely before the filename gives up a single character. */
+.path-base { flex: 0 1 auto; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; }
+
+/* Plain LTR truncation. `direction: rtl` would put the ellipsis on the left,
+   which reads better for paths, but it reorders the trailing slash and runs the
+   directory into the filename ("rc/middlewarerol..."). Correct beats clever:
+   the sidebar is resizable and the full path is on hover. */
+.path-prefix {
+  color: var(--faint);
+  flex: 0 1 auto; min-width: 0; flex-shrink: 999;
+  overflow: hidden; text-overflow: ellipsis;
+}
 
 .churn {
   flex: 0 0 auto; letter-spacing: -.2px; font-size: 10px; color: var(--faint);
@@ -322,13 +337,13 @@ body {
   color: var(--faint); font-weight: 600;
 }
 
-.panes.mode-split { grid-template-columns: minmax(260px, 320px) minmax(320px, 1fr) 1.1fr; }
-.panes.mode-diff  { grid-template-columns: minmax(260px, 320px) 1fr; }
+.panes.mode-split { grid-template-columns: var(--explorer-w) 5px minmax(280px, 1fr) 1.1fr; }
+.panes.mode-diff  { grid-template-columns: var(--explorer-w) 5px 1fr; }
 .panes.mode-diff .diffpane { border-right: 0; }
-.panes.mode-file  { grid-template-columns: minmax(320px, 400px) 1fr; }
+.panes.mode-file  { grid-template-columns: var(--explorer-w) 5px 1fr; }
 
 @media (max-width: 1100px) {
-  .panes.mode-split { grid-template-columns: minmax(240px, 300px) 1fr; }
+  .panes.mode-split { grid-template-columns: var(--explorer-w) 5px 1fr; }
   .panes.mode-split .codepane { display: none; }
 }
 
@@ -478,4 +493,32 @@ body {
 .capped {
   font-size: 10px; color: var(--del);
   border: 1px solid var(--del); border-radius: 3px; padding: 1px 5px;
+}
+
+
+/* ── explorer divider ────────────────────────────────────────── */
+
+.resizer {
+  cursor: col-resize;
+  background: var(--line);
+  border: 0;
+  position: relative;
+  touch-action: none;
+}
+
+/* Widen the grab area without widening the line. */
+.resizer::after {
+  content: "";
+  position: absolute; inset: 0 -4px;
+}
+
+.resizer:hover, .resizer:focus-visible, body.resizing .resizer {
+  background: var(--accent);
+  outline: none;
+}
+
+/* While dragging, nothing else should take the pointer or select text. */
+body.resizing { cursor: col-resize; user-select: none; }
+body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
+  pointer-events: none;
 }

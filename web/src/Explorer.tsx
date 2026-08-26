@@ -92,9 +92,9 @@ export function Explorer({
             <span className={`kind ${file.kind}`} title={KIND_TITLE[file.kind] ?? "modified"}>
               {file.kind}
             </span>
-            <span className="name">
+            <span className="name" title={file.path}>
               <span className="path-prefix">{dirOf(file.path)}</span>
-              {baseOf(file.path)}
+              <span className="path-base">{baseOf(file.path)}</span>
             </span>
             <span className="churn">
               {file.additions > 0 && <span className="p">+{file.additions}</span>}
@@ -133,9 +133,12 @@ export function Explorer({
             onClick={() => onSelect(file.path)}
           >
             <RingMark ring={file} done={rings.done} />
-            <span className={`name${changedPaths.has(file.path) ? "" : " dim"}`}>
+            <span
+              className={`name${changedPaths.has(file.path) ? "" : " dim"}`}
+              title={file.path}
+            >
               <span className="path-prefix">{dirOf(file.path)}</span>
-              {baseOf(file.path)}
+              <span className="path-base">{baseOf(file.path)}</span>
             </span>
             {changedPaths.has(file.path) && <span className="churn">changed</span>}
           </div>

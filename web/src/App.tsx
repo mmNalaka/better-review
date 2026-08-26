@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import {
   loadBlob,
@@ -10,6 +10,7 @@ import {
 } from "./api";
 import { CommitsPanel } from "./CommitsPanel";
 import { DiffPane } from "./DiffPane";
+import { useExplorerWidth } from "./useExplorerWidth";
 import { useRings } from "./useRings";
 import { CodePane } from "./CodePane";
 import { Explorer } from "./Explorer";
@@ -42,6 +43,7 @@ export function App() {
   const [diffLoading, setDiffLoading] = useState(false);
   const [mode, setMode] = useState<"split" | "diff" | "file">("split");
   const [showCommits, setShowCommits] = useState(false);
+  const explorer = useExplorerWidth();
 
   // Ticket 10: the radius starts as soon as the PR is open, and streams in.
   const rings = useRings(
@@ -259,7 +261,10 @@ export function App() {
         <CommitsPanel commits={review.commits} onClose={() => setShowCommits(false)} />
       )}
 
-      <div className={`panes mode-${isChanged ? mode : "file"}`}>
+      <div
+        className={`panes mode-${isChanged ? mode : "file"}`}
+        style={{ "--explorer-w": `${explorer.width}px` } as CSSProperties}
+      >
         {review ? (
           <Explorer
             changed={review.changed}
@@ -274,6 +279,19 @@ export function App() {
             <p className="pane-empty">Open a pull request to begin.</p>
           </nav>
         )}
+        <div
+          className="resizer"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize the file explorer"
+          aria-valuenow={explorer.width}
+          tabIndex={0}
+          onPointerDown={explorer.startDrag}
+          onKeyDown={explorer.nudge}
+          onDoubleClick={explorer.reset}
+          title="Drag to resize · double-click to reset"
+        />
+
         {isChanged && mode !== "file" && (
           <DiffPane diff={diff} loading={diffLoading} onJump={setJumpLine} />
         )}
