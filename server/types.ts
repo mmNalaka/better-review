@@ -8,7 +8,14 @@ export interface PullRequest {
   readonly number: number;
   readonly title: string;
   readonly headSha: string;
+  /** Branch the PR merges into. */
   readonly baseRef: string;
+  /** Branch the PR is from. */
+  readonly headRef: string;
+  /** Set only when the PR comes from a fork, i.e. head repo != base repo. */
+  readonly forkOf: string | null;
+  readonly draft: boolean;
+  readonly state: string;
   /** Fork point, from `git merge-base` — never the API's `base.sha`. See ticket 02. */
   readonly mergeBase: string;
 }

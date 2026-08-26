@@ -9,8 +9,14 @@ export class GitHubError extends Error {
 
 interface PrApiResponse {
   readonly title?: string;
-  readonly head?: { readonly sha?: string };
-  readonly base?: { readonly ref?: string };
+  readonly draft?: boolean;
+  readonly state?: string;
+  readonly head?: {
+    readonly sha?: string;
+    readonly ref?: string;
+    readonly repo?: { readonly full_name?: string };
+  };
+  readonly base?: { readonly ref?: string; readonly repo?: { readonly full_name?: string } };
 }
 
 /**
@@ -55,7 +61,21 @@ export async function fetchPullRequest(
     throw new GitHubError("PR response is missing head.sha or base.ref");
   }
 
-  return { owner, repo, number, title: parsed.title ?? "", headSha, baseRef };
+  const headRepo = parsed.head?.repo?.full_name ?? null;
+  const baseRepo = parsed.base?.repo?.full_name ?? `${owner}/${repo}`;
+
+  return {
+    owner,
+    repo,
+    number,
+    title: parsed.title ?? "",
+    headSha,
+    baseRef,
+    headRef: parsed.head?.ref ?? "",
+    forkOf: headRepo && headRepo !== baseRepo ? headRepo : null,
+    draft: parsed.draft ?? false,
+    state: parsed.state ?? "open",
+  };
 }
 
 const PR_URL = /github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/;

@@ -556,3 +556,33 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
 }
 
 .copypath-said.failed { color: var(--del); }
+
+/* ── PR branches (top bar) ───────────────────────────────────── */
+
+.pr-branches {
+  display: flex; align-items: center; gap: 5px; flex: 0 1 auto; min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+}
+
+.branch {
+  padding: 2px 7px; border-radius: 4px;
+  background: var(--surface-2); border: 1px solid var(--line);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 22ch;
+}
+
+.branch.head { color: var(--ink); }
+.branch.base { color: var(--muted); }
+.into { color: var(--faint); }
+
+.fork {
+  color: var(--faint); font-size: 10.5px;
+  padding-right: 2px;
+}
+
+.badge {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .07em; font-weight: 600;
+  padding: 2px 7px; border-radius: 999px;
+  background: var(--surface-3); color: var(--muted); flex: 0 0 auto;
+}
+
+.badge.draft { background: var(--surface-3); color: var(--flag); }

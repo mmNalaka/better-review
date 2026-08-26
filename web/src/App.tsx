@@ -73,6 +73,8 @@ export function App() {
     try {
       const payload = await loadReview(prRef);
       setReview(payload);
+      // Normalise: a pasted link is long and noisy in the field and the URL.
+      setRef(`${payload.pr.owner}/${payload.pr.repo}#${payload.pr.number}`);
       setMarks(emptyMarks);
       const paths = new Set(payload.changed.map((file) => file.path));
       setTrail(decodeTrail(restore, paths));
@@ -209,7 +211,16 @@ export function App() {
           <input
             value={ref}
             onChange={(event) => setRef(event.target.value)}
-            placeholder="owner/repo#123 or a PR URL"
+            onPaste={(event) => {
+              // Pasting a PR link is the whole gesture — do not also make the
+              // user find the button.
+              const pasted = event.clipboardData.getData("text").trim();
+              if (!pasted) return;
+              event.preventDefault();
+              setRef(pasted);
+              void open(pasted, null);
+            }}
+            placeholder="Paste a PR link, or owner/repo#123"
             aria-label="Pull request"
             spellCheck={false}
           />
@@ -219,6 +230,14 @@ export function App() {
         </form>
         {review && (
           <>
+            <span className="pr-branches" title={`${review.pr.headRef} into ${review.pr.baseRef}`}>
+              {review.pr.forkOf && <span className="fork">{review.pr.forkOf}</span>}
+              <span className="branch head">{review.pr.headRef}</span>
+              <span className="into">&rarr;</span>
+              <span className="branch base">{review.pr.baseRef}</span>
+            </span>
+            {review.pr.draft && <span className="badge draft">draft</span>}
+            {review.pr.state !== "open" && <span className="badge">{review.pr.state}</span>}
             <span className="pr-title">{review.pr.title}</span>
             <span className="counts">
               <span><b>{review.changed.length}</b> changed</span>
