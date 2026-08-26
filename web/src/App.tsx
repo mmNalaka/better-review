@@ -9,6 +9,7 @@ import {
   type ReviewPayload,
 } from "./api";
 import { CommitsPanel } from "./CommitsPanel";
+import { CopyPath } from "./CopyPath";
 import { DiffPane } from "./DiffPane";
 import { useExplorerWidth } from "./useExplorerWidth";
 import { useRings } from "./useRings";
@@ -253,6 +254,7 @@ export function App() {
               </button>
             ))}
           </div>
+          {here && <CopyPath path={here.path} line={here.line > 0 ? here.line : null} />}
           {diffLoading && <span className="seg-label">reading diff…</span>}
         </div>
       )}

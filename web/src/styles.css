@@ -522,3 +522,37 @@ body.resizing { cursor: col-resize; user-select: none; }
 body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
   pointer-events: none;
 }
+
+/* ── copyable path (top bar) ─────────────────────────────────── */
+
+.copypath {
+  display: flex; align-items: center; gap: 6px;
+  min-width: 0; flex: 1 1 auto;
+}
+
+.copypath-path, .copypath-line {
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+  background: transparent; border: 1px solid transparent; border-radius: 5px;
+  padding: 3px 7px; cursor: pointer; color: var(--ink);
+  display: flex; align-items: center; min-width: 0;
+}
+
+.copypath-path:hover, .copypath-line:hover {
+  background: var(--surface-2); border-color: var(--line);
+}
+
+.copypath-path:active, .copypath-line:active { background: var(--surface-3); }
+
+.copypath-path:focus-visible, .copypath-line:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: -1px;
+}
+
+.copypath-line { color: var(--faint); flex: 0 0 auto; padding-left: 4px; padding-right: 6px; }
+
+.copypath-said {
+  font-size: 10.5px; color: var(--accent); flex: 0 0 auto;
+  min-width: 62px; /* reserve the space so nothing shifts when it appears */
+}
+
+.copypath-said.failed { color: var(--del); }
