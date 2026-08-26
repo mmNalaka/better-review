@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { tokenise, type ThemedToken } from "./highlighter";
+import type { BundledTheme } from "shiki";
 
 /**
  * Shiki tokens bundle whitespace and punctuation with identifiers, so a token
@@ -35,11 +36,12 @@ interface CodePaneProps {
   readonly changedLines: ReadonlySet<number>;
   readonly resolving: boolean;
   readonly notice: string | null;
+  readonly theme: BundledTheme;
   readonly onSymbolClick: (line: number, character: number) => void;
 }
 
 export function CodePane({
-  path, text, ring, focusLine, changedLines, resolving, notice, onSymbolClick,
+  path, text, ring, focusLine, changedLines, resolving, notice, theme, onSymbolClick,
 }: CodePaneProps) {
   const [lines, setLines] = useState<readonly (readonly ThemedToken[])[]>([]);
 
@@ -50,13 +52,13 @@ export function CodePane({
     }
     let live = true;
     void (async () => {
-      const rows = await tokenise(text, path);
+      const rows = await tokenise(text, path, theme);
       if (live) setLines(rows);
     })();
     return () => {
       live = false;
     };
-  }, [path, text]);
+  }, [path, text, theme]);
 
   useEffect(() => {
     if (focusLine === null) return;

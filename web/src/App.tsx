@@ -13,8 +13,10 @@ import {
 import { CommitsPanel } from "./CommitsPanel";
 import { Branches } from "./Branches";
 import { CopyPath } from "./CopyPath";
+import { ThemePicker } from "./ThemePicker";
 import { DiffPane } from "./DiffPane";
 import { useExplorerWidth } from "./useExplorerWidth";
+import { useTheme } from "./useTheme";
 import { useRings } from "./useRings";
 import { CodePane } from "./CodePane";
 import { Explorer } from "./Explorer";
@@ -48,6 +50,7 @@ export function App() {
   const [mode, setMode] = useState<"split" | "diff" | "file">("split");
   const [showCommits, setShowCommits] = useState(false);
   const explorer = useExplorerWidth();
+  const theme = useTheme();
 
   /**
    * Optional: narrow the whole review to one commit. Ticket 05 rejected this as
@@ -317,6 +320,7 @@ export function App() {
           </div>
           {here && <CopyPath path={here.path} line={here.line > 0 ? here.line : null} />}
           {diffLoading && <span className="seg-label">reading diff…</span>}
+          <ThemePicker choice={theme.choice} onChange={theme.setChoice} />
         </div>
       )}
 
@@ -364,7 +368,7 @@ export function App() {
         />
 
         {isChanged && mode !== "file" && (
-          <DiffPane diff={diff} loading={diffLoading} onJump={setJumpLine} />
+          <DiffPane diff={diff} loading={diffLoading} theme={theme.resolved} onJump={setJumpLine} />
         )}
         {!(isChanged && mode === "diff") && (
         <CodePane
@@ -387,6 +391,7 @@ export function App() {
           changedLines={changedLines}
           resolving={resolving}
           notice={notice}
+          theme={theme.resolved}
           onSymbolClick={(line, character) => void onSymbolClick(line, character)}
         />
         )}

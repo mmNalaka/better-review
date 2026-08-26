@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import type { FileDiff, Hunk } from "./api";
 import { tokenise, type ThemedToken } from "./highlighter";
+import type { BundledTheme } from "shiki";
 
 /**
  * Ticket 14: the changed hunks, beside the whole file rather than instead of it.
@@ -22,7 +23,7 @@ type Rows = readonly (readonly ThemedToken[])[];
  * removed and added lines produces source that never existed and tokenises
  * badly. Two coherent sides is the closest either half gets to real syntax.
  */
-async function highlightHunk(hunk: Hunk, path: string): Promise<Rows> {
+async function highlightHunk(hunk: Hunk, path: string, theme: BundledTheme): Promise<Rows> {
   const oldText: string[] = [];
   const newText: string[] = [];
   const side: { from: "old" | "new"; index: number }[] = [];
@@ -42,8 +43,8 @@ async function highlightHunk(hunk: Hunk, path: string): Promise<Rows> {
   }
 
   const [oldRows, newRows] = await Promise.all([
-    oldText.length > 0 ? tokenise(oldText.join("\n"), path) : Promise.resolve([]),
-    newText.length > 0 ? tokenise(newText.join("\n"), path) : Promise.resolve([]),
+    oldText.length > 0 ? tokenise(oldText.join("\n"), path, theme) : Promise.resolve([]),
+    newText.length > 0 ? tokenise(newText.join("\n"), path, theme) : Promise.resolve([]),
   ]);
 
   return side.map(({ from, index }) => (from === "old" ? oldRows[index] : newRows[index]) ?? []);
@@ -58,10 +59,11 @@ const MARKER: Readonly<Record<string, string>> = {
 interface DiffPaneProps {
   readonly diff: FileDiff | null;
   readonly loading: boolean;
+  readonly theme: BundledTheme;
   readonly onJump: (line: number) => void;
 }
 
-export function DiffPane({ diff, loading, onJump }: DiffPaneProps) {
+export function DiffPane({ diff, loading, theme, onJump }: DiffPaneProps) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [rows, setRows] = useState<ReadonlyMap<string, Rows>>(new Map());
 
@@ -73,14 +75,16 @@ export function DiffPane({ diff, loading, onJump }: DiffPaneProps) {
     let live = true;
     void (async () => {
       const entries = await Promise.all(
-        diff.hunks.map(async (hunk) => [hunk.header, await highlightHunk(hunk, diff.path)] as const),
+        diff.hunks.map(
+          async (hunk) => [hunk.header, await highlightHunk(hunk, diff.path, theme)] as const,
+        ),
       );
       if (live) setRows(new Map(entries));
     })();
     return () => {
       live = false;
     };
-  }, [diff]);
+  }, [diff, theme]);
 
   const toggle = (header: string) =>
     setExpanded((current) => {
