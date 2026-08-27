@@ -15,7 +15,9 @@ import { Branches } from "./Branches";
 import { CopyPath } from "./CopyPath";
 import { ThemePicker } from "./ThemePicker";
 import { DiffPane } from "./DiffPane";
+import { FullscreenButton } from "./FullscreenButton";
 import { useExplorerWidth } from "./useExplorerWidth";
+import { useFullscreen } from "./useFullscreen";
 import { useTheme } from "./useTheme";
 import { useRings } from "./useRings";
 import { CodePane } from "./CodePane";
@@ -51,6 +53,7 @@ export function App() {
   const [showCommits, setShowCommits] = useState(false);
   const explorer = useExplorerWidth();
   const theme = useTheme();
+  const fullscreen = useFullscreen();
 
   /**
    * Optional: narrow the whole review to one commit. Ticket 05 rejected this as
@@ -292,6 +295,7 @@ export function App() {
             </span>
           </>
         )}
+        <FullscreenButton fullscreen={fullscreen} />
       </header>
 
       {error && <p className="banner">{error}</p>}

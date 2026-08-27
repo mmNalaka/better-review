@@ -59,7 +59,12 @@ body {
 /* Flex, not grid: the number of bars above the panes varies (trail, mode bar,
    error banner), and a fixed `grid-template-rows` put the 1fr on whichever row
    happened to be third — stretching a toolbar and collapsing the panes. */
-.app { display: flex; flex-direction: column; height: 100vh; }
+.app {
+  display: flex; flex-direction: column;
+  /* dvh so a phone's collapsing address bar cannot push the panes off the
+     screen, and so real full screen measures the display exactly. */
+  height: 100vh; height: 100dvh;
+}
 
 .topbar {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
@@ -652,3 +657,42 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
 
 .themepicker select:hover { border-color: var(--accent); }
 .themepicker select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── full screen ─────────────────────────────────────────────── */
+
+/* The root element is what goes full screen, and the UA paints a black backdrop
+   behind it — so the ground colour has to be stated here, not inherited. */
+:root:fullscreen { background: var(--ground); }
+:root:-webkit-full-screen { background: var(--ground); }
+::backdrop { background: var(--ground); }
+
+.fullscreen {
+  /* Far right of the top bar, and still there before a pull request is open —
+     when .pr-title is absent and nothing else takes up the slack. */
+  margin-left: auto; flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+
+.fullscreen button {
+  font: inherit; font-size: 11.5px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 5px;
+  background: var(--surface-2); color: var(--muted);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.fullscreen button:hover { border-color: var(--accent); color: var(--accent); }
+
+.fullscreen button[aria-pressed="true"] {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+}
+
+.fullscreen button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.fullscreen-glyph { font-size: 12.5px; line-height: 1; }
+
+.fullscreen-said {
+  font-size: 10.5px; color: var(--del); max-width: 220px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
