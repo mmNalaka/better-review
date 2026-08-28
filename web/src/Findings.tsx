@@ -29,6 +29,13 @@ const EVENT_LABEL: Readonly<Record<ReviewEvent, string>> = {
   APPROVE: "Approve",
 };
 
+/** What each verdict means on GitHub, in the words the reviewer is thinking. */
+const EVENT_MEANS: Readonly<Record<ReviewEvent, string>> = {
+  COMMENT: "leave the comments, no verdict",
+  REQUEST_CHANGES: "ask for changes before merge",
+  APPROVE: "sign it off",
+};
+
 const EVENTS: readonly ReviewEvent[] = ["COMMENT", "REQUEST_CHANGES", "APPROVE"];
 
 /** Where a finding sits, in words: the line it hangs under, or its hunk. */
@@ -74,6 +81,9 @@ export function Findings({ findings, pr, onClose, onOpen, onPublished }: Finding
     setConfirming(false);
   };
 
+  /** How many notes would actually go: published and stale ones do not. */
+  const ready = findings.filter((finding) => !finding.published && !finding.stale).length;
+
   const preview = async () => {
     setBusy(true);
     setError(null);
@@ -86,6 +96,12 @@ export function Findings({ findings, pr, onClose, onOpen, onPublished }: Finding
     } finally {
       setBusy(false);
     }
+  };
+
+  /** One click to "about to post": the preview is part of the confirmation. */
+  const submit = async () => {
+    await preview();
+    setConfirming(true);
   };
 
   const post = async () => {
@@ -118,7 +134,8 @@ export function Findings({ findings, pr, onClose, onOpen, onPublished }: Finding
 
       {findings.length === 0 ? (
         <p className="pane-empty">
-          Nothing flagged yet. Use the ⚑ beside a hunk to write down why you want to come back to it.
+          Nothing yet. Press the <b>+</b> on any line in the diff to write a comment — they gather
+          here, and go to GitHub as one review when you submit.
         </p>
       ) : (
         <>
@@ -171,24 +188,50 @@ export function Findings({ findings, pr, onClose, onOpen, onPublished }: Finding
       )}
 
       <section className="publish">
-        <span className="eyebrow">Publish to GitHub</span>
-        <div className="seg">
-          {EVENTS.map((option) => (
-            <button
-              key={option}
-              aria-pressed={event === option}
-              onClick={() => {
-                setEvent(option);
-                reset();
-              }}
-            >
-              {EVENT_LABEL[option]}
-            </button>
-          ))}
+        <div className="publish-head">
+          <span className="eyebrow">Submit as one review</span>
+          <span className="publish-count">
+            {ready} comment{ready === 1 ? "" : "s"} ready
+          </span>
         </div>
+
+        {/* The button comes first: the verdict is a detail of submitting, not
+            a thing to decide before knowing submitting is possible. */}
+        <div className="publish-row">
+          <button
+            className="publish-go big"
+            disabled={busy || ready + summary.trim().length === 0}
+            onClick={() => void submit()}
+          >
+            {busy && !confirming ? "Checking…" : `Submit review to ${where}`}
+          </button>
+          <button className="publish-back" disabled={busy} onClick={() => void preview()}>
+            Preview
+          </button>
+        </div>
+
+        <fieldset className="publish-kinds" disabled={busy}>
+          <legend className="publish-legend">Submit as</legend>
+          {EVENTS.map((option) => (
+            <label key={option} className={`publish-kind${event === option ? " on" : ""}`}>
+              <input
+                type="radio"
+                name="review-event"
+                checked={event === option}
+                onChange={() => {
+                  setEvent(option);
+                  reset();
+                }}
+              />
+              <span className="publish-kind-name">{EVENT_LABEL[option]}</span>
+              <span className="publish-kind-means">{EVENT_MEANS[option]}</span>
+            </label>
+          ))}
+        </fieldset>
+
         <textarea
           className="publish-summary"
-          rows={3}
+          rows={2}
           value={summary}
           placeholder="Review summary — optional when there are comments to post"
           onChange={(changed) => {
@@ -197,34 +240,22 @@ export function Findings({ findings, pr, onClose, onOpen, onPublished }: Finding
           }}
         />
 
-        <div className="publish-row">
-          <button className="publish-back" disabled={busy} onClick={() => void preview()}>
-            {busy && !confirming ? "Checking…" : "Preview"}
-          </button>
-          {plan && !confirming && !posted && (
-            <button
-              className="publish-go"
-              disabled={busy || comments + summary.trim().length === 0}
-              onClick={() => setConfirming(true)}
-            >
-              Post to {where}
-            </button>
-          )}
-          {confirming && (
-            <>
-              <span className="publish-ask">
-                Posts {comments} comment{comments === 1 ? "" : "s"} as {EVENT_LABEL[event]} on{" "}
-                {where}.
-              </span>
+        {confirming && (
+          <div className="publish-confirm">
+            <p className="publish-ask">
+              This posts {comments} comment{comments === 1 ? "" : "s"} to {where} as{" "}
+              <b>{EVENT_LABEL[event]}</b>. Everything below is exactly what GitHub will receive.
+            </p>
+            <div className="publish-row">
               <button className="publish-go" disabled={busy} onClick={() => void post()}>
-                {busy ? "Posting…" : "Yes, post"}
+                {busy ? "Posting…" : "Post it"}
               </button>
               <button className="publish-back" onClick={() => setConfirming(false)}>
-                Cancel
+                Not yet
               </button>
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
 
         {plan && !posted && (
           <div className="publish-plan">

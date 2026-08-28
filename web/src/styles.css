@@ -909,9 +909,49 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
 
 .publish-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
 
-.publish-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.publish-head { display: flex; align-items: baseline; gap: 8px; }
 
-.publish-ask { font-size: 11px; color: var(--ink); flex: 1 1 100%; }
+.publish-count {
+  margin-left: auto; font-size: 10.5px; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* stretch, not center: the primary button sets the height and the ones beside
+   it match it, rather than sitting short in the middle of the row. */
+.publish-row { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; }
+
+/* The one thing this panel is for. */
+.publish-go.big { flex: 1 1 auto; padding: 7px 12px; font-size: 12px; font-weight: 600; }
+.publish-go:disabled, .publish-back:disabled { opacity: .5; cursor: default; }
+
+.publish-kinds {
+  display: flex; flex-direction: column; gap: 2px;
+  margin: 0; padding: 0; border: 0;
+}
+
+.publish-legend {
+  padding: 0; font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--faint); font-weight: 600;
+}
+
+.publish-kind {
+  display: flex; align-items: baseline; gap: 7px;
+  padding: 3px 6px; border-radius: 5px; cursor: pointer; font-size: 11.5px;
+}
+
+.publish-kind:hover { background: var(--surface-3); }
+.publish-kind.on { background: var(--accent-soft); }
+.publish-kind input { margin: 0; accent-color: var(--accent); }
+.publish-kind-name { color: var(--ink); }
+.publish-kind-means { color: var(--faint); font-size: 10.5px; }
+
+.publish-confirm {
+  display: flex; flex-direction: column; gap: 7px;
+  padding: 9px 10px; border-radius: 6px;
+  border: 1px solid var(--flag); background: var(--flag-soft, var(--surface-3));
+}
+
+.publish-ask { margin: 0; font-size: 11.5px; color: var(--ink); }
 
 .publish-plan {
   border: 1px solid var(--line); border-radius: 5px;
