@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
-import type { ChangedFile } from "./api";
-import { stateOf, type Marks } from "./marks";
+import type { ChangedFile, HunkIndex, MarkFile } from "./api";
+import { fileState, flagged, type FileState } from "./marks";
 import { RingMark } from "./RingMark";
 import type { RingState } from "./useRings";
 
@@ -29,9 +29,29 @@ function rank(file: { kind: string; ring?: number }): number {
 const dirOf = (path: string) => (path.includes("/") ? `${path.slice(0, path.lastIndexOf("/"))}/` : "");
 const baseOf = (path: string) => path.slice(path.lastIndexOf("/") + 1);
 
+/**
+ * One glyph per state, per ticket 06's budget: the row cannot afford a word.
+ * `changed` is *changed since reviewed* — you did the work and the ground
+ * moved — so it reads as a warning rather than as unreviewed.
+ */
+const STATE_GLYPH: Readonly<Record<FileState, string>> = {
+  none: "·",
+  partial: "◑",
+  reviewed: "✓",
+  changed: "⚠",
+};
+
+const STATE_TITLE: Readonly<Record<FileState, string>> = {
+  none: "Not reviewed — click to mark the whole file",
+  partial: "Some hunks reviewed — click to mark the rest",
+  reviewed: "Reviewed — click to clear",
+  changed: "Changed since you reviewed it — click to mark it again",
+};
+
 interface ExplorerProps {
   readonly changed: readonly ChangedFile[];
-  readonly marks: Marks;
+  readonly marks: MarkFile;
+  readonly index: HunkIndex;
   readonly selected: string | null;
   readonly rings: RingState;
   readonly onSelect: (path: string) => void;
@@ -47,7 +67,7 @@ interface ExplorerProps {
 type Mode = "changed" | "repo";
 
 export function Explorer({
-  changed, marks, selected, rings, onSelect, onToggleReviewed,
+  changed, marks, index, selected, rings, onSelect, onToggleReviewed,
 }: ExplorerProps) {
   const [mode, setMode] = useState<Mode>("changed");
   const [byRing, setByRing] = useState(false);
@@ -61,8 +81,13 @@ export function Explorer({
       : [...rows].sort((a, b) => a.path.localeCompare(b.path));
   }, [rings, byRing]);
 
-  const reviewed = changed.filter((file) => stateOf(marks, file.path) === "reviewed");
-  const open = changed.filter((file) => stateOf(marks, file.path) === "none");
+  const stateOf = (path: string): FileState =>
+    fileState(marks, path, (index.files[path] ?? []).map((hunk) => hunk.id));
+
+  const reviewed = changed.filter((file) => stateOf(file.path) === "reviewed");
+  // Partial and changed-since-reviewed both still want your attention, so they
+  // stay in the open group and say which they are with their glyph.
+  const open = changed.filter((file) => stateOf(file.path) !== "reviewed");
   const percent = changed.length === 0 ? 0 : Math.round((reviewed.length / changed.length) * 100);
 
   const section = (title: string, files: readonly ChangedFile[]) =>
@@ -79,15 +104,15 @@ export function Explorer({
             onClick={() => onSelect(file.path)}
           >
             <button
-              className={`rev ${stateOf(marks, file.path)}`}
-              title="Mark reviewed"
-              aria-pressed={stateOf(marks, file.path) === "reviewed"}
+              className={`rev ${stateOf(file.path)}`}
+              title={STATE_TITLE[stateOf(file.path)]}
+              aria-pressed={stateOf(file.path) === "reviewed"}
               onClick={(event) => {
                 event.stopPropagation();
                 onToggleReviewed(file.path);
               }}
             >
-              {stateOf(marks, file.path) === "reviewed" ? "✓" : "·"}
+              {STATE_GLYPH[stateOf(file.path)]}
             </button>
             <span className={`kind ${file.kind}`} title={KIND_TITLE[file.kind] ?? "modified"}>
               {file.kind}
@@ -96,6 +121,11 @@ export function Explorer({
               <span className="path-prefix">{dirOf(file.path)}</span>
               <span className="path-base">{baseOf(file.path)}</span>
             </span>
+            {flagged(marks, file.path) && (
+              <span className="rowflag" title="This file carries a note">
+                ⚑
+              </span>
+            )}
             <span className="churn">
               {file.additions > 0 && <span className="p">+{file.additions}</span>}
               {file.deletions > 0 && <span className="m">−{file.deletions}</span>}

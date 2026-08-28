@@ -24,3 +24,11 @@ export const PR_REF_NAMESPACE = "refs/prreview";
 export const WORKTREE_ROOT =
   process.env.BR_WORKTREE_ROOT ??
   join(homedir(), "Library", "Application Support", "better-review", "worktrees");
+
+/**
+ * Where review marks live — outside the reviewed repo, so a re-clone or a
+ * `git clean` cannot take your progress with it. Ticket 04.
+ */
+export const MARKS_DIR =
+  process.env.BR_MARKS_DIR ??
+  join(homedir(), "Library", "Application Support", "better-review", "marks");

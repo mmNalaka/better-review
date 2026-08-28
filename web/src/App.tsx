@@ -11,6 +11,7 @@ import {
   type ReviewPayload,
 } from "./api";
 import { CommitsPanel } from "./CommitsPanel";
+import { Findings } from "./Findings";
 import { Branches } from "./Branches";
 import { CopyPath } from "./CopyPath";
 import { ThemePicker } from "./ThemePicker";
@@ -22,7 +23,8 @@ import { useTheme } from "./useTheme";
 import { useRings } from "./useRings";
 import { CodePane } from "./CodePane";
 import { Explorer } from "./Explorer";
-import { emptyMarks, toggleReviewed, type Marks } from "./marks";
+import { findings, setFileReviewed, setLineNote, toggleHunk } from "./marks";
+import { useMarks } from "./useMarks";
 import { Trail } from "./Trail";
 import { decodeTrail, encodeTrail, pushHop, startTrail, truncateTo, type Hop } from "./hops";
 
@@ -41,7 +43,6 @@ function writeParams(pr: string, trail: readonly Hop[]) {
 export function App() {
   const [ref, setRef] = useState(() => readParams().get("pr") ?? DEFAULT_PR);
   const [review, setReview] = useState<ReviewPayload | null>(null);
-  const [marks, setMarks] = useState<Marks>(emptyMarks);
   const [trail, setTrail] = useState<readonly Hop[]>([]);
   const [body, setBody] = useState<{ path: string; text: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,9 +52,13 @@ export function App() {
   const [diffLoading, setDiffLoading] = useState(false);
   const [mode, setMode] = useState<"split" | "diff" | "file">("split");
   const [showCommits, setShowCommits] = useState(false);
+  const [showFindings, setShowFindings] = useState(false);
   const explorer = useExplorerWidth();
   const theme = useTheme();
   const fullscreen = useFullscreen();
+
+  /** Ticket 04: hunk ticks and notes, persisted per pull request. */
+  const marks = useMarks(review?.pr ?? null);
 
   /**
    * Optional: narrow the whole review to one commit. Ticket 05 rejected this as
@@ -113,7 +118,6 @@ export function App() {
       setReview(payload);
       // Normalise: a pasted link is long and noisy in the field and the URL.
       setRef(`${payload.pr.owner}/${payload.pr.repo}#${payload.pr.number}`);
-      setMarks(emptyMarks);
       const paths = new Set(payload.changed.map((file) => file.path));
       setTrail(decodeTrail(restore, paths));
     } catch (cause) {
@@ -177,6 +181,8 @@ export function App() {
   }, [diff]);
 
   const [jumpLine, setJumpLine] = useState<number | null>(null);
+
+  const flags = useMemo(() => findings(marks.marks, marks.index), [marks.marks, marks.index]);
 
   useEffect(() => {
     if (review) writeParams(ref, trail);
@@ -323,9 +329,32 @@ export function App() {
             ))}
           </div>
           {here && <CopyPath path={here.path} line={here.line > 0 ? here.line : null} />}
+          <button
+            className={`findings-open${flags.length > 0 ? " some" : ""}`}
+            aria-pressed={showFindings}
+            onClick={() => setShowFindings((open) => !open)}
+            title="Flagged hunks, and publishing them to GitHub"
+          >
+            ⚑ {flags.length} {flags.length === 1 ? "finding" : "findings"}
+          </button>
+          {marks.saving && <span className="seg-label">saving…</span>}
+          {marks.error && <span className="notice">{marks.error}</span>}
           {diffLoading && <span className="seg-label">reading diff…</span>}
           <ThemePicker choice={theme.choice} onChange={theme.setChoice} />
         </div>
+      )}
+
+      {review && showFindings && (
+        <Findings
+          findings={flags}
+          pr={review.pr}
+          onClose={() => setShowFindings(false)}
+          onOpen={(path) => {
+            selectFile(path);
+            setShowFindings(false);
+          }}
+          onPublished={marks.replace}
+        />
       )}
 
       {review && showCommits && (
@@ -347,11 +376,23 @@ export function App() {
         {review ? (
           <Explorer
             changed={visibleChanged}
-            marks={marks}
+            marks={marks.marks}
+            index={marks.index}
             selected={here?.path ?? null}
             rings={rings}
             onSelect={selectFile}
-            onToggleReviewed={(path) => setMarks((current) => toggleReviewed(current, path))}
+            onToggleReviewed={(path) =>
+              marks.update((current, at) =>
+                setFileReviewed(
+                  current,
+                  path,
+                  marks.hunksOf(path),
+                  // Anything short of fully reviewed means "mark the rest".
+                  marks.hunksOf(path).some((hunk) => !current.hunks[`${path}@${hunk.id}`]?.reviewed),
+                  at,
+                ),
+              )
+            }
           />
         ) : (
           <nav className="explorer">
@@ -372,7 +413,22 @@ export function App() {
         />
 
         {isChanged && mode !== "file" && (
-          <DiffPane diff={diff} loading={diffLoading} theme={theme.resolved} onJump={setJumpLine} />
+          <DiffPane
+            diff={diff}
+            loading={diffLoading}
+            theme={theme.resolved}
+            marks={marks.marks}
+            onJump={setJumpLine}
+            onToggleHunk={(id, header) =>
+              here && marks.update((current, at) => toggleHunk(current, here.path, id, header, at))
+            }
+            onNote={(anchor, body) =>
+              here &&
+              marks.update((current, at) =>
+                setLineNote(current, { path: here.path, ...anchor }, body, at),
+              )
+            }
+          />
         )}
         {!(isChanged && mode === "diff") && (
         <CodePane

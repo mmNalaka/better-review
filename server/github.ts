@@ -94,3 +94,40 @@ export function parsePrRef(
     ? { owner: match[1], repo: match[2], number }
     : null;
 }
+
+/**
+ * Posts a pull request review — the one write this app makes, and only when
+ * the user asks for it. Auth is the user's own `gh` login; no token here.
+ */
+export async function postReview(
+  owner: string,
+  repo: string,
+  number: number,
+  payload: unknown,
+): Promise<{ url: string }> {
+  const proc = Bun.spawn(
+    ["gh", "api", "--method", "POST", `repos/${owner}/${repo}/pulls/${number}/reviews`, "--input", "-"],
+    { stdin: "pipe", stdout: "pipe", stderr: "pipe" },
+  );
+  proc.stdin.write(JSON.stringify(payload));
+  await proc.stdin.end();
+
+  const [stdout, stderr, code] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ]);
+
+  if (code !== 0) {
+    // Keep gh's words: a 422 here names the line it refused, which is the
+    // difference between "fix the anchor" and "fix your token".
+    throw new GitHubError(`Posting the review failed. gh said: ${stderr.trim() || "no stderr"}`);
+  }
+
+  try {
+    const parsed = JSON.parse(stdout) as { html_url?: string };
+    return { url: parsed.html_url ?? `https://github.com/${owner}/${repo}/pull/${number}` };
+  } catch {
+    throw new GitHubError("gh api returned output that was not JSON");
+  }
+}

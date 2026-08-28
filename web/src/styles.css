@@ -696,3 +696,266 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
   font-size: 10.5px; color: var(--del); max-width: 220px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+
+/* ── hunk ticks and notes (ticket 04) ────────────────────────── */
+
+/* The header row grew two controls, so it is a row rather than a block. */
+.hunkbar { display: flex; align-items: stretch; background: var(--surface-3); }
+
+.hunkbar .hunkhead { flex: 1 1 auto; min-width: 0; }
+
+.hunktick, .hunkflag {
+  flex: 0 0 auto; font: inherit; cursor: pointer;
+  background: transparent; border: 0; color: var(--faint);
+  padding: 0 8px; line-height: 1;
+}
+
+.hunktick { color: var(--surface-2); font-size: 12px; }
+.hunkbar:hover .hunktick { color: var(--faint); }
+.hunktick.on, .hunkbar:hover .hunktick.on { color: var(--add); }
+.hunkflag.on, .hunkbar:hover .hunkflag.on { color: var(--flag); }
+.hunktick:hover, .hunkflag:hover { color: var(--ink); }
+
+.hunktick:focus-visible, .hunkflag:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: -2px;
+}
+
+/* A reviewed hunk stays readable but stops competing for attention. */
+.hunkblock.done .dl-text, .hunkblock.done .dl-old, .hunkblock.done .dl-new { opacity: .55; }
+
+/* ── inline comments (GitHub-style, under the line) ──────────── */
+
+/* The `+` sits in its own column so the code never shifts when it appears. */
+.dl-add {
+  flex: 0 0 16px; font: inherit; font-size: 11px; line-height: 1;
+  padding: 0; cursor: pointer; border: 0; border-radius: 3px;
+  background: transparent; color: transparent;
+  user-select: none;
+}
+
+.dl:hover .dl-add { background: var(--accent); color: var(--accent-ink); }
+.dl-add:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; color: var(--accent); }
+
+/* A line that carries a comment keeps a mark of its own, so the connection
+   survives scrolling past the box. */
+.dl.noted { box-shadow: inset 2px 0 0 var(--flag); }
+
+.dl-comment {
+  display: flex; gap: 8px; align-items: flex-start;
+  margin: 4px 0 6px 22px; padding: 7px 10px;
+  border: 1px solid var(--line); border-left: 2px solid var(--flag); border-radius: 4px;
+  background: var(--surface-2);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 12px;
+}
+
+.dl-comment-flag { color: var(--flag); flex: 0 0 auto; line-height: 1.5; }
+.dl-comment-body { min-width: 0; white-space: pre-wrap; }
+
+.dl-comment-row { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+
+.dl-comment-row button {
+  font: inherit; font-size: 10.5px; cursor: pointer;
+  background: transparent; border: 0; padding: 0; color: var(--faint);
+  text-decoration: underline;
+}
+
+.dl-comment-row button:hover { color: var(--accent); }
+
+.dl-compose {
+  display: flex; flex-direction: column; gap: 6px;
+  margin: 4px 0 6px 22px; padding: 8px 10px;
+  border: 1px solid var(--line); border-left: 2px solid var(--flag); border-radius: 4px;
+  background: var(--surface-2);
+}
+
+.dl-compose textarea {
+  font: inherit;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 12px;
+  line-height: 1.5; resize: vertical;
+  padding: 6px 8px; border-radius: 4px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+
+.dl-compose textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.noterow { display: flex; align-items: center; gap: 8px; }
+
+.notesave, .notecancel {
+  font: inherit; font-size: 11px; cursor: pointer;
+  padding: 3px 10px; border-radius: 5px;
+}
+
+.notesave { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); }
+.notecancel { border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); }
+.notecancel:hover { color: var(--ink); }
+.notehint { font-size: 10px; color: var(--faint); margin-left: auto; }
+
+/* ── review state in the explorer row ────────────────────────── */
+
+.rev.reviewed, .rev.partial { color: var(--accent); }
+.rev.changed { color: var(--flag); }
+
+.rowflag { flex: 0 0 auto; font-size: 10px; color: var(--flag); }
+
+/* ── findings and publishing (ticket 04) ─────────────────────── */
+
+.findings-open {
+  font: inherit; font-size: 11.5px; cursor: pointer;
+  padding: 4px 10px; border-radius: 5px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--muted);
+  white-space: nowrap;
+}
+
+.findings-open.some { color: var(--flag); border-color: var(--flag); }
+.findings-open[aria-pressed="true"] {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+}
+.findings-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Same drawer as the commits panel: one place off to the side, never a modal
+   over the code you are reading. */
+.findings {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 94vw); z-index: 41;
+  background: var(--surface); border-left: 1px solid var(--line);
+  box-shadow: var(--shadow, 0 8px 30px rgba(0,0,0,.25));
+  overflow-y: auto; display: flex; flex-direction: column;
+}
+
+.findings-actions {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 14px; border-bottom: 1px solid var(--line-soft);
+}
+
+.findings-actions button {
+  font: inherit; font-size: 11px; cursor: pointer;
+  padding: 3px 10px; border-radius: 5px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--muted);
+}
+
+.findings-actions button:hover { border-color: var(--accent); color: var(--accent); }
+
+.finding { padding: 10px 14px; border-bottom: 1px solid var(--line-soft); }
+
+.finding-place {
+  font: inherit; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+  background: transparent; border: 0; padding: 0; cursor: pointer; color: var(--accent);
+}
+
+.finding-place:hover { text-decoration: underline; }
+
+.finding-header {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px; color: var(--faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.finding-note {
+  margin: 5px 0 0; padding: 6px 9px; white-space: pre-wrap;
+  background: color-mix(in srgb, var(--flag) 10%, transparent);
+  border-left: 2px solid var(--flag); font-size: 12px;
+}
+
+.finding-tags { display: flex; gap: 6px; margin-top: 6px; }
+.badge.stale { background: var(--surface-3); color: var(--flag); }
+.badge.posted { background: var(--accent-soft); color: var(--accent); text-decoration: none; }
+
+.publish {
+  margin-top: auto; display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 14px 16px; border-top: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.publish-summary {
+  font: inherit; font-size: 11.5px; line-height: 1.5; resize: vertical;
+  padding: 6px 8px; border-radius: 5px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+
+.publish-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.publish-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.publish-ask { font-size: 11px; color: var(--ink); flex: 1 1 100%; }
+
+.publish-plan {
+  border: 1px solid var(--line); border-radius: 5px;
+  background: var(--surface); max-height: 30vh; overflow-y: auto;
+}
+
+.publish-line {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 6px 9px; border-bottom: 1px solid var(--line-soft);
+}
+
+.publish-where {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px; color: var(--accent);
+}
+
+.publish-side {
+  margin-left: 7px; color: var(--faint); text-transform: uppercase;
+  letter-spacing: .07em; font-size: 9.5px;
+}
+
+.publish-body { font-size: 11.5px; white-space: pre-wrap; }
+
+.publish-skip { padding: 5px 9px; font-size: 10.5px; color: var(--flag); }
+.publish-none { margin: 0; padding: 7px 9px; font-size: 11px; color: var(--faint); }
+
+.publish-done { margin: 0; font-size: 11.5px; color: var(--add); }
+.publish-done a, .badge.posted { color: var(--accent); }
+.publish-error { margin: 0; font-size: 11.5px; color: var(--del); }
+
+/* ── ranges and suggestions ──────────────────────────────────── */
+
+.dl-add { touch-action: none; }
+
+/* The lines a comment is being written about, while it is being written. */
+.dl.picking { background: var(--accent-soft); }
+.dl.picking .dl-add { background: var(--accent); color: var(--accent-ink); }
+
+.dl-compose-head {
+  display: flex; align-items: center; gap: 10px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.dl-compose-where, .dl-comment-where {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--faint); font-weight: 600;
+}
+
+.dl-comment-where { display: block; margin-bottom: 3px; }
+
+.dl-suggest {
+  margin-left: auto; font: inherit; font-size: 10.5px; cursor: pointer;
+  padding: 2px 8px; border-radius: 4px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+}
+
+.dl-suggest:hover { border-color: var(--accent); color: var(--accent); }
+
+.dl-comment-prose { white-space: pre-wrap; }
+
+/* The suggestion, as the change it is: what goes, then what comes. */
+.dl-suggestion {
+  margin: 6px 0 2px; padding: 5px 0 4px;
+  border: 1px solid var(--line); border-radius: 4px; overflow-x: auto;
+  background: var(--surface);
+}
+
+.dl-suggestion .eyebrow { display: block; padding: 0 8px 4px; }
+
+.dl-suggestion-line {
+  display: flex; gap: 6px; padding: 0 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px; line-height: 1.5; white-space: pre;
+}
+
+.dl-suggestion-line.out { background: color-mix(in srgb, var(--del) 13%, transparent); }
+.dl-suggestion-line.in { background: color-mix(in srgb, var(--add) 13%, transparent); }
+.dl-suggestion-line.out .dl-mark { color: var(--del); }
+.dl-suggestion-line.in .dl-mark { color: var(--add); }
+
+.dl-suggestion-note { padding: 3px 8px 0; font-size: 10.5px; color: var(--faint); }
+
+.badge.suggests { background: var(--accent-soft); color: var(--accent); }

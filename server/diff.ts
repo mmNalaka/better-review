@@ -1,4 +1,5 @@
 import { git } from "./git";
+import { hunkId } from "./hunkid";
 import type { ChangeKind } from "./types";
 
 /**
@@ -24,6 +25,8 @@ export interface HunkCommit {
 }
 
 export interface Hunk {
+  /** Content-addressed identity — see hunkid.ts. What a review mark keys to. */
+  readonly id: string;
   readonly header: string;
   readonly oldStart: number;
   readonly newStart: number;
@@ -60,7 +63,7 @@ export function parseUnifiedDiff(patch: string): { hunks: Hunk[]; binary: boolea
   let newNo = 0;
 
   const flush = () => {
-    if (header) hunks.push({ header, oldStart, newStart, lines });
+    if (header) hunks.push({ id: hunkId(lines), header, oldStart, newStart, lines });
   };
 
   for (const raw of patch.split("\n")) {
@@ -90,6 +93,80 @@ export function parseUnifiedDiff(patch: string): { hunks: Hunk[]; binary: boolea
   }
   flush();
   return { hunks, binary: false };
+}
+
+export interface FileHunks {
+  readonly hunks: readonly Hunk[];
+  readonly binary: boolean;
+}
+
+/** Only the header lines above the first hunk may name the file. */
+const pathOf = (block: string): string | null => {
+  const head = block.split("\n@@")[0] ?? "";
+  const lines = head.split("\n");
+  const named = (prefix: string): string | null => {
+    for (const line of lines) {
+      if (!line.startsWith(prefix)) continue;
+      // git appends a tab when the path contains a space.
+      const raw = line.slice(prefix.length).replace(/\s+$/, "");
+      if (raw === "/dev/null") return null;
+      return raw.replace(/^[ab]\//, "");
+    }
+    return null;
+  };
+  // Head side names the file; a deletion has none, so fall back to the base.
+  // A binary file has neither, and only the `diff --git a/x b/x` line is left.
+  const git = /^a\/(.*) b\/(.*)$/.exec(lines[0] ?? "");
+  return named("+++ ") ?? named("--- ") ?? git?.[2] ?? null;
+};
+
+/**
+ * One `git diff` of the whole pull request, split per file. The client needs
+ * every file's hunk ids to derive review state in the explorer — the alternative
+ * was one diff per changed file, which is 32 git invocations for one column.
+ */
+export function splitDiffByFile(patch: string): Map<string, FileHunks> {
+  const byFile = new Map<string, FileHunks>();
+  for (const block of patch.split(/^diff --git /m)) {
+    if (!block.trim()) continue;
+    const path = pathOf(block);
+    if (!path) continue;
+    const { hunks, binary } = parseUnifiedDiff(block);
+    byFile.set(path, { hunks, binary });
+  }
+  return byFile;
+}
+
+export interface HunkRef {
+  readonly id: string;
+  readonly header: string;
+}
+
+/**
+ * Every hunk the pull request has, as ids only. This is what the explorer
+ * derives review state from: a file is `reviewed` when every id here is
+ * marked, and `changed since reviewed` when a mark names an id that is gone.
+ */
+export interface HunkIndex {
+  readonly files: Readonly<Record<string, readonly HunkRef[]>>;
+}
+
+export const indexHunks = (byFile: Map<string, FileHunks>): HunkIndex => ({
+  files: Object.fromEntries(
+    [...byFile].map(([path, file]) => [
+      path,
+      file.hunks.map((hunk) => ({ id: hunk.id, header: hunk.header })),
+    ]),
+  ),
+});
+
+/** Every hunk in the pull request, by path. One git call. */
+export async function allHunks(
+  repoDir: string,
+  base: string,
+  head: string,
+): Promise<Map<string, FileHunks>> {
+  return splitDiffByFile(await git(repoDir, "diff", "--no-color", base, head));
 }
 
 /**
