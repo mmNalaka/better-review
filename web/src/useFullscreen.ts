@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from "react";
  * Full screen, for the same reason the explorer is resizable: the review is the
  * code, and browser chrome is three wasted rows of it. Escape leaves — the
  * browser handles that itself — so the only thing to own here is entering.
+ *
+ * The `f` shortcut lives with all the others in shortcuts.ts; this hook only
+ * knows how to toggle.
  */
 
 /** Safari (including iPadOS) still ships only the prefixed API. */
@@ -80,34 +83,6 @@ export function useFullscreen(): Fullscreen {
     })();
   }, []);
 
-  /**
-   * `f` is the shortcut. F11 is the browser's own and cannot be intercepted
-   * reliably, so it is left alone rather than half-supported.
-   */
-  useEffect(() => {
-    if (!supported) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "f" && event.key !== "F") return;
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
-      if (isTyping(event.target)) return;
-      event.preventDefault();
-      toggle();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [supported, toggle]);
-
   return { active, supported, error, toggle };
 }
 
-/** A single letter must never be stolen from the pull-request field. */
-function isTyping(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    target.isContentEditable
-  );
-}

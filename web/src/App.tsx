@@ -12,6 +12,7 @@ import {
 } from "./api";
 import { CommitsPanel } from "./CommitsPanel";
 import { Findings } from "./Findings";
+import { Help } from "./Help";
 import { Branches } from "./Branches";
 import { CopyPath } from "./CopyPath";
 import { ThemePicker } from "./ThemePicker";
@@ -19,6 +20,8 @@ import { DiffPane } from "./DiffPane";
 import { FullscreenButton } from "./FullscreenButton";
 import { useExplorerWidth } from "./useExplorerWidth";
 import { useFullscreen } from "./useFullscreen";
+import { useKeys } from "./useKeys";
+import { stepHunk } from "./hunkScroll";
 import { useTheme } from "./useTheme";
 import { useRings } from "./useRings";
 import { CodePane } from "./CodePane";
@@ -53,6 +56,7 @@ export function App() {
   const [mode, setMode] = useState<"split" | "diff" | "file">("split");
   const [showCommits, setShowCommits] = useState(false);
   const [showFindings, setShowFindings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const explorer = useExplorerWidth();
   const theme = useTheme();
   const fullscreen = useFullscreen();
@@ -184,6 +188,7 @@ export function App() {
 
   const flags = useMemo(() => findings(marks.marks, marks.index), [marks.marks, marks.index]);
 
+
   useEffect(() => {
     if (review) writeParams(ref, trail);
   }, [review, ref, trail]);
@@ -204,6 +209,58 @@ export function App() {
     },
     [ringOf],
   );
+
+  /** Step through the changed files without reaching for the mouse. */
+  const stepFile = useCallback(
+    (direction: 1 | -1) => {
+      const paths = visibleChanged.map((file) => file.path);
+      if (paths.length === 0) return;
+      const at = here ? paths.indexOf(here.path) : -1;
+      const next = at === -1 ? (direction === 1 ? 0 : paths.length - 1) : at + direction;
+      const path = paths[Math.max(0, Math.min(paths.length - 1, next))];
+      if (path) selectFile(path);
+    },
+    [visibleChanged, here, selectFile],
+  );
+
+  const toggleReviewedHere = useCallback(() => {
+    if (!here) return;
+    const hunks = marks.hunksOf(here.path);
+    marks.update((current, at) =>
+      setFileReviewed(
+        current,
+        here.path,
+        hunks,
+        hunks.some((hunk) => !current.hunks[`${here.path}@${hunk.id}`]?.reviewed),
+        at,
+      ),
+    );
+  }, [here, marks]);
+
+  /** Esc closes one thing at a time, nearest first. */
+  const closeTop = useCallback(() => {
+    if (showHelp) setShowHelp(false);
+    else if (showFindings) setShowFindings(false);
+    else if (showCommits) setShowCommits(false);
+  }, [showHelp, showFindings, showCommits]);
+
+  useKeys({
+    j: () => stepFile(1),
+    k: () => stepFile(-1),
+    n: () => void stepHunk(1),
+    p: () => void stepHunk(-1),
+    Backspace: () => setTrail([]),
+    "/": () => document.querySelector<HTMLInputElement>(".prform input")?.select(),
+    v: toggleReviewedHere,
+    c: () => setShowFindings((open) => !open),
+    s: () => setShowCommits((open) => !open),
+    "1": () => isChanged && setMode("split"),
+    "2": () => isChanged && setMode("diff"),
+    "3": () => setMode("file"),
+    f: fullscreen.toggle,
+    "?": () => setShowHelp((open) => !open),
+    Escape: closeTop,
+  });
 
   const onSymbolClick = useCallback(
     async (line: number, character: number) => {
@@ -301,6 +358,14 @@ export function App() {
             </span>
           </>
         )}
+        <button
+          className="helpopen"
+          aria-pressed={showHelp}
+          title="How this works, and the keys — ?"
+          onClick={() => setShowHelp((open) => !open)}
+        >
+          ?
+        </button>
         <FullscreenButton fullscreen={fullscreen} />
       </header>
 
@@ -346,6 +411,8 @@ export function App() {
           <ThemePicker choice={theme.choice} onChange={theme.setChoice} />
         </div>
       )}
+
+      {showHelp && <Help onClose={() => setShowHelp(false)} />}
 
       {review && showFindings && (
         <Findings

@@ -1067,3 +1067,63 @@ body.picking-lines .dl-text { pointer-events: none; }
 .dl-suggestion-note { padding: 3px 8px 0; font-size: 10.5px; color: var(--faint); }
 
 .badge.suggests { background: var(--accent-soft); color: var(--accent); }
+
+/* ── help ────────────────────────────────────────────────────── */
+
+.helpopen {
+  flex: 0 0 auto; width: 24px; height: 24px; padding: 0; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  font: inherit; font-size: 12px; font-weight: 600;
+  border: 1px solid var(--line); border-radius: 50%;
+  background: var(--surface-2); color: var(--muted);
+}
+
+.helpopen:hover { border-color: var(--accent); color: var(--accent); }
+
+.helpopen[aria-pressed="true"] {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+}
+
+.helpopen:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Left, not right: the drawers on the right are the review's own state, and
+   help should not cover the thing it is explaining. */
+.help {
+  position: fixed; top: 0; left: 0; bottom: 0; width: min(520px, 94vw); z-index: 42;
+  background: var(--surface); border-right: 1px solid var(--line);
+  box-shadow: var(--shadow, 0 8px 30px rgba(0,0,0,.25));
+  display: flex; flex-direction: column;
+}
+
+.help-body { overflow-y: auto; padding: 4px 16px 24px; }
+
+.help-part { padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+.help-part:last-child { border-bottom: 0; }
+
+.help-part h3 {
+  margin: 0 0 6px; font-size: 12px; font-weight: 650; color: var(--ink);
+}
+
+.help-part p {
+  margin: 0 0 7px; font-size: 12px; line-height: 1.6; color: var(--muted);
+}
+
+.help-part p:last-child { margin-bottom: 0; }
+.help-part b { color: var(--ink); font-weight: 600; }
+
+.help-keys { margin-top: 10px; }
+.help-keys dl { margin: 5px 0 0; display: flex; flex-direction: column; gap: 3px; }
+
+.help-key { display: flex; align-items: baseline; gap: 10px; font-size: 12px; }
+.help-key dt { flex: 0 0 46px; }
+.help-key dd { margin: 0; color: var(--muted); }
+
+.help kbd {
+  display: inline-block; min-width: 22px; text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px;
+  padding: 2px 6px; border-radius: 4px;
+  border: 1px solid var(--line); border-bottom-width: 2px;
+  background: var(--surface-2); color: var(--ink);
+}
+
+.help-note { margin-top: 10px !important; font-size: 11px !important; color: var(--faint) !important; }
