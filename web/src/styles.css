@@ -155,14 +155,31 @@ body {
 .row:hover { background: var(--surface-2); }
 .row.sel { background: var(--accent-soft); }
 
+/**
+ * The one control that marks a file read, drawn as a checkbox.
+ *
+ * It was a bare glyph in the row's own background colour: invisible until
+ * hover, and unrecognisable as a control even then. A box with an edge says
+ * "click me" while it is still empty, which is the state it spends most of its
+ * life in.
+ */
 .rev {
-  width: 15px; flex: 0 0 15px; padding: 0; cursor: pointer;
-  border: 0; background: transparent; font: inherit; font-size: 11px;
-  line-height: 1; color: var(--accent); border-radius: 3px;
+  width: 16px; height: 16px; flex: 0 0 16px; padding: 0; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  font: inherit; font-size: 11px; line-height: 1;
+  border: 1px solid var(--line); border-radius: 4px;
+  background: var(--surface-2); color: var(--accent);
 }
 
-.rev.none { color: var(--surface-3); }
-.row:hover .rev.none { color: var(--faint); }
+.rev.none { border-color: var(--faint); }
+.row:hover .rev { border-color: var(--accent); }
+.rev:hover { background: var(--accent-soft); }
+
+.rev.reviewed {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+}
+
+.rev.partial { border-color: var(--accent); }
 
 .kind {
   width: 11px; flex: 0 0 11px; text-align: center; font-weight: 700;
@@ -707,12 +724,28 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
 .hunktick, .hunkflag {
   flex: 0 0 auto; font: inherit; cursor: pointer;
   background: transparent; border: 0; color: var(--faint);
-  padding: 0 8px; line-height: 1;
+  padding: 0 9px; line-height: 1;
 }
 
-.hunktick { color: var(--surface-2); font-size: 12px; }
-.hunkbar:hover .hunktick { color: var(--faint); }
-.hunktick.on, .hunkbar:hover .hunktick.on { color: var(--add); }
+/* Bigger than the text around it, and legible before hover: a flag nobody
+   notices is a comment nobody writes. */
+.hunkflag { font-size: 15px; }
+
+/* The same checkbox, one level down: a hunk is ticked the way a file is. */
+.hunktick {
+  display: inline-flex; align-items: center; justify-content: center;
+  /* The bar stretches its items, which does nothing for one with a fixed
+     height — it pins to the top instead. Centre it explicitly. */
+  align-self: center;
+  width: 15px; height: 15px; margin: 0 2px; padding: 0; font-size: 10px;
+  border: 1px solid var(--faint); border-radius: 4px;
+  background: transparent; color: var(--add);
+}
+
+.hunkbar:hover .hunktick { border-color: var(--add); }
+.hunktick.on {
+  background: var(--add); border-color: var(--add); color: var(--surface);
+}
 .hunkflag.on, .hunkbar:hover .hunkflag.on { color: var(--flag); }
 .hunktick:hover, .hunkflag:hover { color: var(--ink); }
 
@@ -736,10 +769,6 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
 .dl:hover .dl-add { background: var(--accent); color: var(--accent-ink); }
 .dl-add:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; color: var(--accent); }
 
-/* A line that carries a comment keeps a mark of its own, so the connection
-   survives scrolling past the box. */
-.dl.noted { box-shadow: inset 2px 0 0 var(--flag); }
-
 .dl-comment {
   display: flex; gap: 8px; align-items: flex-start;
   margin: 4px 0 6px 22px; padding: 7px 10px;
@@ -748,7 +777,7 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 12px;
 }
 
-.dl-comment-flag { color: var(--flag); flex: 0 0 auto; line-height: 1.5; }
+.dl-comment-flag { color: var(--flag); flex: 0 0 auto; font-size: 15px; line-height: 1.3; }
 .dl-comment-body { min-width: 0; white-space: pre-wrap; }
 
 .dl-comment-row { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
@@ -780,22 +809,27 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
 
 .noterow { display: flex; align-items: center; gap: 8px; }
 
-.notesave, .notecancel {
+.notesave, .notecancel, .publish-go, .publish-back {
   font: inherit; font-size: 11px; cursor: pointer;
   padding: 3px 10px; border-radius: 5px;
 }
 
-.notesave { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); }
-.notecancel { border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); }
-.notecancel:hover { color: var(--ink); }
+.notesave, .publish-go {
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+}
+
+.notecancel, .publish-back {
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--muted);
+}
+
+.notecancel:hover, .publish-back:hover { color: var(--ink); }
 .notehint { font-size: 10px; color: var(--faint); margin-left: auto; }
 
 /* ── review state in the explorer row ────────────────────────── */
 
-.rev.reviewed, .rev.partial { color: var(--accent); }
-.rev.changed { color: var(--flag); }
+.rev.changed { border-color: var(--flag); color: var(--flag); }
 
-.rowflag { flex: 0 0 auto; font-size: 10px; color: var(--flag); }
+.rowflag { flex: 0 0 auto; font-size: 13px; line-height: 1; color: var(--flag); }
 
 /* ── findings and publishing (ticket 04) ─────────────────────── */
 
@@ -805,6 +839,8 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
   border: 1px solid var(--line); background: var(--surface-2); color: var(--muted);
   white-space: nowrap;
 }
+
+.findings-flag { font-size: 15px; line-height: 1; }
 
 .findings-open.some { color: var(--flag); border-color: var(--flag); }
 .findings-open[aria-pressed="true"] {
@@ -910,9 +946,41 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
 
 .dl-add { touch-action: none; }
 
-/* The lines a comment is being written about, while it is being written. */
-.dl.picking { background: var(--accent-soft); }
-.dl.picking .dl-add { background: var(--accent); color: var(--accent-ink); }
+/* While a range is being dragged, nothing else takes the pointer or selects. */
+body.picking-lines { user-select: none; cursor: crosshair; }
+body.picking-lines .dl-text { pointer-events: none; }
+
+/* GitHub's shape: the picked lines are one tinted band, rounded at its ends,
+   with a rule down the gutter edge tying them together. */
+/* A wash, not a replacement: an inset shadow the size of the row tints it
+   while the added or removed colour underneath still reads. */
+.dl.picking {
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    inset 0 0 0 9999px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.dl.picking .dl-old, .dl.picking .dl-new { color: var(--accent); }
+
+.dl.pick-top { border-top-left-radius: 5px; border-top-right-radius: 5px; }
+.dl.pick-bottom { border-bottom-left-radius: 5px; border-bottom-right-radius: 5px; }
+
+/* The `+` is the affordance, so it stays solid across the whole picked band
+   rather than following the pointer row by row. */
+.dl.picking .dl-add,
+.dl:hover .dl-add {
+  background: var(--accent); color: var(--accent-ink);
+  border-radius: 3px;
+}
+
+/* A line that already carries a comment keeps its own mark, and yields to the
+   selection colour while it is being picked. */
+.dl.noted { box-shadow: inset 2px 0 0 var(--flag); }
+.dl.noted.picking {
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    inset 0 0 0 9999px color-mix(in srgb, var(--accent) 15%, transparent);
+}
 
 .dl-compose-head {
   display: flex; align-items: center; gap: 10px;

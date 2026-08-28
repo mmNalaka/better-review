@@ -1,4 +1,4 @@
-import { MARKS_DIR, SERVER_PORT } from "./config";
+import { MARKS_DIR, SERVER_PORT, WEB_DIST } from "./config";
 import {
   changedFiles,
   changedFilesInCommit,
@@ -17,6 +17,7 @@ import { readMarks, writeMarks } from "./markstore";
 import { findDefinition, UnsupportedLanguageError } from "./lsp";
 import { ensureWorktree } from "./worktree";
 import { buildTagsFor } from "./buildtags";
+import { hasBuild, serveAsset } from "./static";
 import { allHunks, fileDiff, indexHunks } from "./diff";
 import { walkBlastRadius } from "./rings";
 import type { ReviewPayload } from "./types";
@@ -357,22 +358,50 @@ const routes: Record<string, (url: URL, request: Request) => Promise<Response>> 
   },
 };
 
-Bun.serve({
-  port: SERVER_PORT,
-  idleTimeout: 120, // gopls cold start can exceed the default
-  async fetch(request) {
-    const url = new URL(request.url);
-    const route = routes[url.pathname];
-    if (!route) return fail(`No route for ${url.pathname}`, 404);
-    try {
-      return await route(url, request);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error(`[${url.pathname}]`, message);
-      const bad = error instanceof BadRequest || error instanceof MarkError;
-      return fail(message, bad ? 400 : 502);
-    }
-  },
-});
+export interface ServerOptions {
+  readonly port?: number;
+  /** Where the built client lives. Absent in development, where Vite serves it. */
+  readonly webDist?: string;
+}
 
-console.log(`better-review server on http://localhost:${SERVER_PORT}`);
+export async function startServer(options: ServerOptions = {}) {
+  const port = options.port ?? SERVER_PORT;
+  const dist = options.webDist ?? WEB_DIST;
+  const serving = await hasBuild(dist);
+
+  return Bun.serve({
+    port,
+    idleTimeout: 120, // gopls cold start can exceed the default
+    async fetch(request) {
+      const url = new URL(request.url);
+      const route = routes[url.pathname];
+
+      if (!route) {
+        // Anything that is not an API call is the packaged client, if there is
+        // one. Unknown paths fall back to the page: the app keeps its state in
+        // the query string, so a reload of any URL has to reach it.
+        if (!url.pathname.startsWith("/api/") && serving) {
+          const asset =
+            (await serveAsset(dist, url.pathname)) ?? (await serveAsset(dist, "/index.html"));
+          if (asset) return asset;
+        }
+        return fail(`No route for ${url.pathname}`, 404);
+      }
+
+      try {
+        return await route(url, request);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[${url.pathname}]`, message);
+        const bad = error instanceof BadRequest || error instanceof MarkError;
+        return fail(message, bad ? 400 : 502);
+      }
+    },
+  });
+}
+
+// `bun server/index.ts` still starts it; the CLI imports startServer instead.
+if (import.meta.main) {
+  await startServer();
+  console.log(`better-review server on http://localhost:${SERVER_PORT}`);
+}

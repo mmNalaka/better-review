@@ -1,6 +1,6 @@
 {
   "name": "better-review",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,14 +8,13 @@
     "dev:server": "bun --watch server/index.ts",
     "dev:web": "vite",
     "build": "vite build",
+    "start": "bun bin/better-review.ts",
+    "doctor": "bun bin/better-review.ts --doctor",
     "test": "bun test",
-    "typecheck": "node_modules/typescript/bin/tsc --noEmit"
+    "typecheck": "node_modules/typescript/bin/tsc --noEmit",
+    "prepublishOnly": "bun run build && bun test && bun run typecheck"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "shiki": "^3.14.0",
-    "tsgo": "npm:typescript@^7.0.2",
     "vscode-jsonrpc": "^9"
   },
   "devDependencies": {
@@ -23,7 +22,32 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "shiki": "^3.14.0",
+    "tsgo": "npm:typescript@^7.0.2",
     "typescript": "^5.9.3",
     "vite": "^7.1.0"
-  }
+  },
+  "description": "Read a GitHub pull request properly: navigate by reference, see how far code sits from the change, mark and comment as you go, publish the review when you are done.",
+  "bin": {
+    "better-review": "bin/better-review.ts"
+  },
+  "files": [
+    "bin",
+    "server",
+    "web/dist",
+    "README.md",
+    "CONTEXT.md"
+  ],
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "keywords": [
+    "code-review",
+    "github",
+    "pull-request",
+    "git",
+    "bun"
+  ]
 }

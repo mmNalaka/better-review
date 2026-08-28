@@ -1,5 +1,16 @@
 import type { BundledTheme } from "shiki";
 
+import { CUSTOM_THEMES } from "./claudeTheme";
+
+export { CUSTOM_THEMES } from "./claudeTheme";
+
+/**
+ * A theme by name: one of Shiki's, or one this app ships itself. The two are
+ * interchangeable everywhere downstream — a custom theme is loaded rather than
+ * fetched, and nothing else has to know which it got.
+ */
+export type ThemeName = BundledTheme | keyof typeof CUSTOM_THEMES;
+
 /**
  * Predefined themes. Chrome is derived from the editor theme's own colours
  * rather than hand-authored per theme, so the app can never clash with the
@@ -9,16 +20,18 @@ import type { BundledTheme } from "shiki";
 export interface ThemeChoice {
   readonly id: string;
   readonly label: string;
-  readonly shiki: BundledTheme;
+  readonly shiki: ThemeName;
   readonly dark: boolean;
 }
 
 export const SYSTEM = "system";
 
 export const THEMES: readonly ThemeChoice[] = [
+  { id: "claude-light", label: "Claude Light", shiki: "claude-light", dark: false },
   { id: "github-light", label: "GitHub Light", shiki: "github-light", dark: false },
   { id: "vitesse-light", label: "Vitesse Light", shiki: "vitesse-light", dark: false },
   { id: "catppuccin-latte", label: "Catppuccin Latte", shiki: "catppuccin-latte", dark: false },
+  { id: "claude-dark", label: "Claude Dark", shiki: "claude-dark", dark: true },
   { id: "github-dark", label: "GitHub Dark", shiki: "github-dark", dark: true },
   { id: "github-dark-dimmed", label: "GitHub Dimmed", shiki: "github-dark-dimmed", dark: true },
   { id: "one-dark-pro", label: "One Dark Pro", shiki: "one-dark-pro", dark: true },
@@ -27,8 +40,8 @@ export const THEMES: readonly ThemeChoice[] = [
   { id: "catppuccin-mocha", label: "Catppuccin Mocha", shiki: "catppuccin-mocha", dark: true },
 ];
 
-export const SYSTEM_LIGHT: BundledTheme = "github-light";
-export const SYSTEM_DARK: BundledTheme = "github-dark";
+export const SYSTEM_LIGHT: ThemeName = "github-light";
+export const SYSTEM_DARK: ThemeName = "github-dark";
 
 /* ── colour helpers ──────────────────────────────────────────── */
 

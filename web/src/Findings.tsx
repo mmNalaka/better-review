@@ -198,12 +198,12 @@ export function Findings({ findings, pr, onClose, onOpen, onPublished }: Finding
         />
 
         <div className="publish-row">
-          <button className="notecancel" disabled={busy} onClick={() => void preview()}>
+          <button className="publish-back" disabled={busy} onClick={() => void preview()}>
             {busy && !confirming ? "Checking…" : "Preview"}
           </button>
           {plan && !confirming && !posted && (
             <button
-              className="notesave"
+              className="publish-go"
               disabled={busy || comments + summary.trim().length === 0}
               onClick={() => setConfirming(true)}
             >
@@ -216,10 +216,10 @@ export function Findings({ findings, pr, onClose, onOpen, onPublished }: Finding
                 Posts {comments} comment{comments === 1 ? "" : "s"} as {EVENT_LABEL[event]} on{" "}
                 {where}.
               </span>
-              <button className="notesave" disabled={busy} onClick={() => void post()}>
+              <button className="publish-go" disabled={busy} onClick={() => void post()}>
                 {busy ? "Posting…" : "Yes, post"}
               </button>
-              <button className="notecancel" onClick={() => setConfirming(false)}>
+              <button className="publish-back" onClick={() => setConfirming(false)}>
                 Cancel
               </button>
             </>

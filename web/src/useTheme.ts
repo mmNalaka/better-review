@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import type { BundledTheme } from "shiki";
 
 import { ensureTheme, systemTheme } from "./highlighter";
-import { deriveTokens, SYSTEM, THEMES, type ShikiThemeColours } from "./themes";
+import {
+  deriveTokens,
+  SYSTEM,
+  THEMES,
+  type ShikiThemeColours,
+  type ThemeName,
+} from "./themes";
 
 const KEY = "better-review:theme";
 
@@ -20,7 +25,7 @@ const read = (): string => {
  */
 export function useTheme() {
   const [choice, setChoiceState] = useState<string>(read);
-  const [resolved, setResolved] = useState<BundledTheme>(() =>
+  const [resolved, setResolved] = useState<ThemeName>(() =>
     read() === SYSTEM
       ? systemTheme()
       : (THEMES.find((t) => t.id === read())?.shiki ?? systemTheme()),

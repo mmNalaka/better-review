@@ -1,11 +1,16 @@
-import { createHighlighter, type BundledLanguage, type Highlighter, type ThemedToken } from "shiki";
+import {
+  createHighlighter,
+  type BundledLanguage,
+  type BundledTheme,
+  type Highlighter,
+  type ThemedToken,
+} from "shiki";
 
 /** One highlighter for the whole app: loading grammars twice is wasteful. */
 
 export type { ThemedToken };
 
-import { SYSTEM_DARK, SYSTEM_LIGHT } from "./themes";
-import type { BundledTheme } from "shiki";
+import { CUSTOM_THEMES, SYSTEM_DARK, SYSTEM_LIGHT, type ThemeName } from "./themes";
 
 const LANGS = [
   "go", "typescript", "tsx", "javascript", "json", "yaml",
@@ -24,10 +29,12 @@ export const getHighlighter = (): Promise<Highlighter> =>
   (promise ??= createHighlighter({ themes: [SYSTEM_LIGHT, SYSTEM_DARK], langs: [...LANGS] }));
 
 /** Themes are loaded on demand: bundling all of them would be wasteful. */
-export async function ensureTheme(theme: BundledTheme): Promise<Highlighter> {
+export async function ensureTheme(theme: ThemeName): Promise<Highlighter> {
   const highlighter = await getHighlighter();
   if (!highlighter.getLoadedThemes().includes(theme)) {
-    await highlighter.loadTheme(theme);
+    // Ours are objects already in memory; Shiki's are fetched by name.
+    const ours = CUSTOM_THEMES[theme];
+    await (ours ? highlighter.loadTheme(ours) : highlighter.loadTheme(theme as BundledTheme));
   }
   return highlighter;
 }
@@ -35,7 +42,7 @@ export async function ensureTheme(theme: BundledTheme): Promise<Highlighter> {
 export const langFor = (path: string): BundledLanguage | null =>
   BY_EXTENSION[path.slice(path.lastIndexOf(".") + 1).toLowerCase()] ?? null;
 
-export const systemTheme = (): BundledTheme =>
+export const systemTheme = (): ThemeName =>
   typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches
     ? SYSTEM_DARK
     : SYSTEM_LIGHT;
@@ -44,7 +51,7 @@ export const systemTheme = (): BundledTheme =>
 export async function tokenise(
   code: string,
   path: string,
-  theme: BundledTheme,
+  theme: ThemeName,
 ): Promise<readonly (readonly ThemedToken[])[]> {
   try {
     const highlighter = await ensureTheme(theme);

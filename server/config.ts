@@ -1,5 +1,6 @@
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export const SERVER_PORT = Number(process.env.BR_SERVER_PORT ?? 4317);
 export const WEB_PORT = Number(process.env.BR_WEB_PORT ?? 5173);
@@ -32,3 +33,14 @@ export const WORKTREE_ROOT =
 export const MARKS_DIR =
   process.env.BR_MARKS_DIR ??
   join(homedir(), "Library", "Application Support", "better-review", "marks");
+
+/**
+ * The built client. Packaged, the server serves this itself so the whole app
+ * is one process on one port; in development Vite serves it instead and this
+ * directory simply does not exist.
+ */
+/* `import.meta.dir` is Bun's; this file is also loaded by Node when Vite reads
+   its config, where only the URL form exists. */
+const PACKAGE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+
+export const WEB_DIST = process.env.BR_WEB_DIST ?? join(PACKAGE_ROOT, "web", "dist");

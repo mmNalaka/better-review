@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { tokenise, type ThemedToken } from "./highlighter";
-import type { BundledTheme } from "shiki";
+import type { ThemeName } from "./themes";
 
 /**
  * Shiki tokens bundle whitespace and punctuation with identifiers, so a token
@@ -36,7 +36,7 @@ interface CodePaneProps {
   readonly changedLines: ReadonlySet<number>;
   readonly resolving: boolean;
   readonly notice: string | null;
-  readonly theme: BundledTheme;
+  readonly theme: ThemeName;
   readonly onSymbolClick: (line: number, character: number) => void;
 }
 

@@ -35,7 +35,9 @@ const baseOf = (path: string) => path.slice(path.lastIndexOf("/") + 1);
  * moved — so it reads as a warning rather than as unreviewed.
  */
 const STATE_GLYPH: Readonly<Record<FileState, string>> = {
-  none: "·",
+  // Empty, because the control is drawn as a box: an empty box reads as
+  // "tick me" where a faint dot read as decoration and was missed entirely.
+  none: "",
   partial: "◑",
   reviewed: "✓",
   changed: "⚠",
@@ -106,6 +108,9 @@ export function Explorer({
             <button
               className={`rev ${stateOf(file.path)}`}
               title={STATE_TITLE[stateOf(file.path)]}
+              /* The box is empty when unreviewed, so it carries no text to
+                 name it. */
+              aria-label={`${file.path}: ${STATE_TITLE[stateOf(file.path)]}`}
               aria-pressed={stateOf(file.path) === "reviewed"}
               onClick={(event) => {
                 event.stopPropagation();

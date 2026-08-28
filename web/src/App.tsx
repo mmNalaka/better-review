@@ -335,7 +335,10 @@ export function App() {
             onClick={() => setShowFindings((open) => !open)}
             title="Flagged hunks, and publishing them to GitHub"
           >
-            ⚑ {flags.length} {flags.length === 1 ? "finding" : "findings"}
+            <span className="findings-flag" aria-hidden="true">
+              ⚑
+            </span>{" "}
+            {flags.length} {flags.length === 1 ? "finding" : "findings"}
           </button>
           {marks.saving && <span className="seg-label">saving…</span>}
           {marks.error && <span className="notice">{marks.error}</span>}
