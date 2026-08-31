@@ -236,3 +236,33 @@ export const reviewSubmission = (
   event,
   comments: plan.comments,
 });
+
+/**
+ * A comment as GitHub's thread API wants it.
+ *
+ * The batch `comments[]` array on `POST /pulls/{n}/reviews` does not apply the
+ * line fields — it stored our comments positionally, with `line` and `side`
+ * null, which is why they appeared in the conversation but never in the diff.
+ * `addPullRequestReviewThread` is the API that anchors to lines, and this is
+ * its shape: camelCase, and a subject type.
+ */
+export interface ThreadInput {
+  readonly path: string;
+  readonly body: string;
+  readonly side: Side;
+  readonly startSide?: Side;
+  readonly startLine?: number;
+  readonly line: number;
+  readonly subjectType: "LINE";
+}
+
+export const toThreadInput = (comment: ReviewComment): ThreadInput => ({
+  path: comment.path,
+  body: comment.body,
+  side: comment.side,
+  ...(comment.start_line === undefined
+    ? {}
+    : { startLine: comment.start_line, startSide: comment.start_side ?? comment.side }),
+  line: comment.line,
+  subjectType: "LINE",
+});

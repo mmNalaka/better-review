@@ -262,17 +262,27 @@ const routes: Record<string, (url: URL, request: Request) => Promise<Response>> 
     }
 
     const posted = await postReview(owner, repo, number, submission);
-    // Stamp what went out, so the same note is never posted twice.
+
+    // Stamp only what actually landed: a comment GitHub refused is still
+    // unpublished, and must not look posted the next time round.
     const at = new Date().toISOString();
     const notes = { ...marks.notes };
-    for (const key of plan.keys) {
-      const note = notes[key];
-      if (note) notes[key] = { ...note, published: { at, url: posted.url } };
+    for (const index of posted.posted) {
+      const key = plan.keys[index];
+      const note = key === undefined ? undefined : notes[key];
+      if (key !== undefined && note) notes[key] = { ...note, published: { at, url: posted.url } };
     }
     const stamped = { ...marks, notes };
     await writeMarks(MARKS_DIR, pr, stamped);
 
-    return json({ posted: true, url: posted.url, count: plan.comments.length, plan, marks: stamped });
+    return json({
+      posted: true,
+      url: posted.url,
+      count: posted.posted.length,
+      failures: posted.failures,
+      plan,
+      marks: stamped,
+    });
   },
 
   /**

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { parseUnifiedDiff, type FileHunks } from "./diff";
 import { emptyMarkFile, noteKey, type MarkFile } from "./markmodel";
-import { planReview } from "./publish";
+import { planReview, toThreadInput } from "./publish";
 
 const PR = { owner: "sitoo", repo: "auth", number: 146 } as const;
 
@@ -279,5 +279,39 @@ describe("planReview", () => {
       },
     };
     expect(planReview(marks, byFile).comments.map((c) => c.body)).toEqual(["first", "second"]);
+  });
+});
+
+describe("toThreadInput", () => {
+  test("maps a single-line comment, leaving the range fields out", () => {
+    expect(
+      toThreadInput({ path: "a.go", body: "why?", side: "RIGHT", line: 25 }),
+    ).toEqual({ path: "a.go", body: "why?", side: "RIGHT", line: 25, subjectType: "LINE" });
+  });
+
+  test("maps a range, with each end on its own side", () => {
+    expect(
+      toThreadInput({
+        path: "a.go",
+        body: "these",
+        side: "RIGHT",
+        start_line: 25,
+        start_side: "LEFT",
+        line: 27,
+      }),
+    ).toEqual({
+      path: "a.go",
+      body: "these",
+      side: "RIGHT",
+      startSide: "LEFT",
+      startLine: 25,
+      line: 27,
+      subjectType: "LINE",
+    });
+  });
+
+  test("defaults the start side to the end side when only a start line is given", () => {
+    const input = toThreadInput({ path: "a.go", body: "x", side: "LEFT", start_line: 3, line: 5 });
+    expect(input.startSide).toBe("LEFT");
   });
 });

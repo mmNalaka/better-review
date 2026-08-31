@@ -137,7 +137,10 @@ export interface PublishPreview {
 export interface PublishResult {
   readonly posted: true;
   readonly url: string;
+  /** How many comments actually landed on lines. */
   readonly count: number;
+  /** Comments GitHub would not anchor, with its reason. */
+  readonly failures: readonly { readonly path: string; readonly reason: string }[];
   readonly plan: PublishPlan;
   readonly marks: MarkFile;
 }

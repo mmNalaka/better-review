@@ -1,3 +1,4 @@
+import { toThreadInput, type ReviewSubmission } from "./publish";
 import type { PullRequest } from "./types";
 
 export class GitHubError extends Error {
@@ -96,20 +97,28 @@ export function parsePrRef(
 }
 
 /**
- * Posts a pull request review — the one write this app makes, and only when
- * the user asks for it. Auth is the user's own `gh` login; no token here.
+ * Posting a review, the way GitHub's own UI does it.
+ *
+ * Not `POST /pulls/{n}/reviews` with a `comments[]` array: that endpoint
+ * ignores the line fields and stores each comment against a diff *position*,
+ * which leaves `line` and `side` null. Such a comment shows up in the
+ * conversation and can never be drawn in the files-changed view — the bug this
+ * replaces. `addPullRequestReviewThread` is the API that anchors to a line, so
+ * the flow is: open a pending review, add a thread per comment, submit it.
  */
-export async function postReview(
-  owner: string,
-  repo: string,
-  number: number,
-  payload: unknown,
-): Promise<{ url: string }> {
-  const proc = Bun.spawn(
-    ["gh", "api", "--method", "POST", `repos/${owner}/${repo}/pulls/${number}/reviews`, "--input", "-"],
-    { stdin: "pipe", stdout: "pipe", stderr: "pipe" },
-  );
-  proc.stdin.write(JSON.stringify(payload));
+
+interface GraphQlReply<T> {
+  readonly data?: T;
+  readonly errors?: readonly { readonly message?: string }[];
+}
+
+async function graphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
+  const proc = Bun.spawn(["gh", "api", "graphql", "--input", "-"], {
+    stdin: "pipe",
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  proc.stdin.write(JSON.stringify({ query, variables }));
   await proc.stdin.end();
 
   const [stdout, stderr, code] = await Promise.all([
@@ -118,16 +127,120 @@ export async function postReview(
     proc.exited,
   ]);
 
-  if (code !== 0) {
-    // Keep gh's words: a 422 here names the line it refused, which is the
-    // difference between "fix the anchor" and "fix your token".
-    throw new GitHubError(`Posting the review failed. gh said: ${stderr.trim() || "no stderr"}`);
+  let parsed: GraphQlReply<T>;
+  try {
+    parsed = JSON.parse(stdout) as GraphQlReply<T>;
+  } catch {
+    // A non-zero exit with unparseable output is usually auth or network.
+    throw new GitHubError(`gh api graphql failed: ${stderr.trim() || `exit ${code}`}`);
   }
 
-  try {
-    const parsed = JSON.parse(stdout) as { html_url?: string };
-    return { url: parsed.html_url ?? `https://github.com/${owner}/${repo}/pull/${number}` };
-  } catch {
-    throw new GitHubError("gh api returned output that was not JSON");
+  const failed = parsed.errors?.map((error) => error.message ?? "unknown").join("; ");
+  if (failed) throw new GitHubError(failed);
+  if (!parsed.data) throw new GitHubError("gh api graphql returned no data");
+  return parsed.data;
+}
+
+const PR_ID = `query ($owner: String!, $repo: String!, $number: Int!) {
+  repository(owner: $owner, name: $repo) { pullRequest(number: $number) { id } }
+}`;
+
+const OPEN_REVIEW = `mutation ($pullRequestId: ID!, $commitOID: GitObjectID) {
+  addPullRequestReview(input: { pullRequestId: $pullRequestId, commitOID: $commitOID }) {
+    pullRequestReview { id }
   }
+}`;
+
+const ADD_THREAD = `mutation (
+  $pullRequestReviewId: ID!, $path: String!, $body: String!,
+  $line: Int!, $side: DiffSide, $startLine: Int, $startSide: DiffSide,
+  $subjectType: PullRequestReviewThreadSubjectType
+) {
+  addPullRequestReviewThread(input: {
+    pullRequestReviewId: $pullRequestReviewId, path: $path, body: $body,
+    line: $line, side: $side, startLine: $startLine, startSide: $startSide,
+    subjectType: $subjectType
+  }) { thread { id } }
+}`;
+
+const SUBMIT = `mutation ($pullRequestReviewId: ID!, $event: PullRequestReviewEvent!, $body: String) {
+  submitPullRequestReview(input: {
+    pullRequestReviewId: $pullRequestReviewId, event: $event, body: $body
+  }) { pullRequestReview { url state } }
+}`;
+
+const DISCARD = `mutation ($pullRequestReviewId: ID!) {
+  deletePullRequestReview(input: { pullRequestReviewId: $pullRequestReviewId }) {
+    pullRequestReview { id }
+  }
+}`;
+
+/** A comment that could not be anchored, and why. */
+export interface ThreadFailure {
+  /** Index into the comments that were handed in. */
+  readonly index: number;
+  readonly path: string;
+  readonly reason: string;
+}
+
+export interface PostedReview {
+  readonly url: string;
+  /** Indexes of the comments that landed, so only those get stamped. */
+  readonly posted: readonly number[];
+  readonly failures: readonly ThreadFailure[];
+}
+
+export async function postReview(
+  owner: string,
+  repo: string,
+  number: number,
+  submission: ReviewSubmission,
+): Promise<PostedReview> {
+  const { repository } = await graphql<{
+    repository: { pullRequest: { id: string } | null } | null;
+  }>(PR_ID, { owner, repo, number });
+
+  const pullRequestId = repository?.pullRequest?.id;
+  if (!pullRequestId) throw new GitHubError(`${owner}/${repo}#${number} not found`);
+
+  const opened = await graphql<{
+    addPullRequestReview: { pullRequestReview: { id: string } };
+  }>(OPEN_REVIEW, { pullRequestId, commitOID: submission.commit_id });
+  const reviewId = opened.addPullRequestReview.pullRequestReview.id;
+
+  const posted: number[] = [];
+  const failures: ThreadFailure[] = [];
+
+  // One at a time, and on purpose: a line GitHub will not take should cost that
+  // comment, not the whole review.
+  for (const [index, comment] of submission.comments.entries()) {
+    try {
+      await graphql(ADD_THREAD, { pullRequestReviewId: reviewId, ...toThreadInput(comment) });
+      posted.push(index);
+    } catch (cause) {
+      failures.push({
+        index,
+        path: comment.path,
+        reason: cause instanceof Error ? cause.message : String(cause),
+      });
+    }
+  }
+
+  if (submission.comments.length > 0 && posted.length === 0) {
+    // Nothing anchored: discard the draft rather than leave an empty review.
+    await graphql(DISCARD, { pullRequestReviewId: reviewId }).catch(() => {});
+    throw new GitHubError(
+      `None of the ${failures.length} comments could be anchored. First reason: ${failures[0]?.reason ?? "unknown"}`,
+    );
+  }
+
+  const submitted = await graphql<{
+    submitPullRequestReview: { pullRequestReview: { url: string } };
+  }>(SUBMIT, {
+    pullRequestReviewId: reviewId,
+    event: submission.event,
+    body: submission.body || null,
+  });
+
+  return { url: submitted.submitPullRequestReview.pullRequestReview.url, posted, failures };
 }

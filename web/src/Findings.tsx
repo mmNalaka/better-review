@@ -70,7 +70,11 @@ export function Findings({ findings, pr, onClose, onOpen, onPublished }: Finding
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [posted, setPosted] = useState<{ url: string; count: number } | null>(null);
+  const [posted, setPosted] = useState<{
+    url: string;
+    count: number;
+    failures: readonly { path: string; reason: string }[];
+  } | null>(null);
   const copy = useCopy();
 
   const where = `${pr.owner}/${pr.repo}#${pr.number}`;
@@ -109,7 +113,7 @@ export function Findings({ findings, pr, onClose, onOpen, onPublished }: Finding
     setError(null);
     try {
       const result = await publishReview(pr.owner, pr.repo, pr.number, pr.headSha, event, summary);
-      setPosted({ url: result.url, count: result.count });
+      setPosted({ url: result.url, count: result.count, failures: result.failures ?? [] });
       setPlan(result.plan);
       setConfirming(false);
       onPublished(result.marks);
@@ -284,12 +288,19 @@ export function Findings({ findings, pr, onClose, onOpen, onPublished }: Finding
         )}
 
         {posted && (
-          <p className="publish-done">
-            Posted {posted.count} comment{posted.count === 1 ? "" : "s"}.{" "}
-            <a href={posted.url} target="_blank" rel="noreferrer">
-              Open the review on GitHub
-            </a>
-          </p>
+          <>
+            <p className="publish-done">
+              Posted {posted.count} comment{posted.count === 1 ? "" : "s"}.{" "}
+              <a href={posted.url} target="_blank" rel="noreferrer">
+                Open the review on GitHub
+              </a>
+            </p>
+            {posted.failures.map((failure, index) => (
+              <p className="publish-error" key={index}>
+                {failure.path} — GitHub would not anchor this one: {failure.reason}
+              </p>
+            ))}
+          </>
         )}
 
         {error && <p className="publish-error">{error}</p>}
