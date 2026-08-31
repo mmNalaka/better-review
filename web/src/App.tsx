@@ -1,0 +1,531 @@
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+
+import {
+  loadBlob,
+  loadCommitFiles,
+  loadDiff,
+  loadReview,
+  resolveDefinition,
+  type ChangedFile,
+  type FileDiff,
+  type ReviewPayload,
+} from "./api";
+import { CommitsPanel } from "./CommitsPanel";
+import { Findings } from "./Findings";
+import { Help } from "./Help";
+import { Branches } from "./Branches";
+import { CopyPath } from "./CopyPath";
+import { ThemePicker } from "./ThemePicker";
+import { DiffPane } from "./DiffPane";
+import { FullscreenButton } from "./FullscreenButton";
+import { useExplorerWidth } from "./useExplorerWidth";
+import { useFullscreen } from "./useFullscreen";
+import { useKeys } from "./useKeys";
+import { stepHunk } from "./hunkScroll";
+import { useTheme } from "./useTheme";
+import { useRings } from "./useRings";
+import { CodePane } from "./CodePane";
+import { Explorer } from "./Explorer";
+import { findings, setFileReviewed, setLineNote, toggleHunk } from "./marks";
+import { useMarks } from "./useMarks";
+import { Trail } from "./Trail";
+import { decodeTrail, encodeTrail, pushHop, startTrail, truncateTo, type Hop } from "./hops";
+
+const DEFAULT_PR = "sitoo/auth#146";
+
+const readParams = () => new URLSearchParams(location.search);
+
+function writeParams(pr: string, trail: readonly Hop[]) {
+  const url = new URL(location.href);
+  url.searchParams.set("pr", pr);
+  if (trail.length > 0) url.searchParams.set("trail", encodeTrail(trail));
+  else url.searchParams.delete("trail");
+  history.replaceState(null, "", url);
+}
+
+export function App() {
+  const [ref, setRef] = useState(() => readParams().get("pr") ?? DEFAULT_PR);
+  const [review, setReview] = useState<ReviewPayload | null>(null);
+  const [trail, setTrail] = useState<readonly Hop[]>([]);
+  const [body, setBody] = useState<{ path: string; text: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [diff, setDiff] = useState<FileDiff | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
+  const [mode, setMode] = useState<"split" | "diff" | "file">("split");
+  const [showCommits, setShowCommits] = useState(false);
+  const [showFindings, setShowFindings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const explorer = useExplorerWidth();
+  const theme = useTheme();
+  const fullscreen = useFullscreen();
+
+  /** Ticket 04: hunk ticks and notes, persisted per pull request. */
+  const marks = useMarks(review?.pr ?? null);
+
+  /**
+   * Optional: narrow the whole review to one commit. Ticket 05 rejected this as
+   * the default (84 commits is 84 passes) but it earns its place as a mode —
+   * the "address review feedback" commit here is 3 files, not 32.
+   */
+  const [commitFilter, setCommitFilter] = useState<string | null>(null);
+  const [commitFiles, setCommitFiles] = useState<readonly ChangedFile[] | null>(null);
+
+  // Ticket 10: the radius starts as soon as the PR is open, and streams in.
+  const rings = useRings(
+    review?.pr.owner ?? null,
+    review?.pr.repo ?? null,
+    review?.pr.number ?? null,
+    review?.pr.headSha ?? null,
+  );
+  const [resolving, setResolving] = useState(false);
+
+  /** What the explorer lists: the whole PR, or just the selected commit. */
+  const visibleChanged = commitFilter && commitFiles ? commitFiles : (review?.changed ?? []);
+
+  const changedPaths = useMemo(
+    () => new Set(visibleChanged.map((file) => file.path)),
+    [visibleChanged],
+  );
+
+  useEffect(() => {
+    if (!review || !commitFilter) {
+      setCommitFiles(null);
+      return;
+    }
+    let live = true;
+    void loadCommitFiles(
+      review.pr.owner, review.pr.repo, review.pr.number, review.pr.headSha, commitFilter,
+    )
+      .then((result) => live && setCommitFiles(result.changed))
+      .catch((cause: unknown) => {
+        if (live) setError(cause instanceof Error ? cause.message : String(cause));
+      });
+    return () => {
+      live = false;
+    };
+  }, [review, commitFilter]);
+
+  const here = trail.at(-1) ?? null;
+  const isChanged = here !== null && changedPaths.has(here.path);
+
+  const open = useCallback(async (prRef: string, restore: string | null) => {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    setReview(null);
+    setTrail([]);
+    setBody(null);
+    try {
+      const payload = await loadReview(prRef);
+      setReview(payload);
+      // Normalise: a pasted link is long and noisy in the field and the URL.
+      setRef(`${payload.pr.owner}/${payload.pr.repo}#${payload.pr.number}`);
+      const paths = new Set(payload.changed.map((file) => file.path));
+      setTrail(decodeTrail(restore, paths));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  // Restore whatever the URL described, once.
+  useEffect(() => {
+    const params = readParams();
+    void open(params.get("pr") ?? DEFAULT_PR, params.get("trail"));
+  }, [open]);
+
+  // Load the file the current hop points at.
+  useEffect(() => {
+    if (!review || !here) {
+      setBody(null);
+      return;
+    }
+    let live = true;
+    void loadBlob(review.pr.owner, review.pr.repo, review.pr.headSha, here.path)
+      .then((blob) => live && setBody({ path: here.path, text: blob.text }))
+      .catch((cause: unknown) => {
+        if (live) setError(cause instanceof Error ? cause.message : String(cause));
+      });
+    return () => {
+      live = false;
+    };
+  }, [review, here?.path]);
+
+  // The diff only exists for files the PR changed.
+  useEffect(() => {
+    if (!review || !here || !changedPaths.has(here.path)) {
+      setDiff(null);
+      return;
+    }
+    let live = true;
+    setDiffLoading(true);
+    void loadDiff(
+      review.pr.owner, review.pr.repo, review.pr.number, review.pr.headSha, here.path,
+      commitFilter,
+    )
+      .then((result) => live && setDiff(result))
+      .catch(() => live && setDiff(null))
+      .finally(() => live && setDiffLoading(false));
+    return () => {
+      live = false;
+    };
+  }, [review, here?.path, changedPaths, commitFilter]);
+
+  const changedLines = useMemo(() => {
+    const lines = new Set<number>();
+    for (const hunk of diff?.hunks ?? []) {
+      for (const line of hunk.lines) {
+        if (line.kind === "added" && line.newLine !== null) lines.add(line.newLine - 1);
+      }
+    }
+    return lines;
+  }, [diff]);
+
+  const [jumpLine, setJumpLine] = useState<number | null>(null);
+
+  const flags = useMemo(() => findings(marks.marks, marks.index), [marks.marks, marks.index]);
+
+
+  useEffect(() => {
+    if (review) writeParams(ref, trail);
+  }, [review, ref, trail]);
+
+  const ringOf = useCallback(
+    (path: string): Hop["ring"] => (changedPaths.has(path) ? "changed" : "unknown"),
+    [changedPaths],
+  );
+
+  /** Real ring for the file being read, once the walk has placed it. */
+  const ringHere = here ? rings.byPath.get(here.path) : undefined;
+
+  /** Explorer click starts a fresh trail at hop zero — ticket 07. */
+  const selectFile = useCallback(
+    (path: string) => {
+      setNotice(null);
+      setTrail(startTrail({ path, line: 0, ring: ringOf(path) }));
+    },
+    [ringOf],
+  );
+
+  /** Step through the changed files without reaching for the mouse. */
+  const stepFile = useCallback(
+    (direction: 1 | -1) => {
+      const paths = visibleChanged.map((file) => file.path);
+      if (paths.length === 0) return;
+      const at = here ? paths.indexOf(here.path) : -1;
+      const next = at === -1 ? (direction === 1 ? 0 : paths.length - 1) : at + direction;
+      const path = paths[Math.max(0, Math.min(paths.length - 1, next))];
+      if (path) selectFile(path);
+    },
+    [visibleChanged, here, selectFile],
+  );
+
+  const toggleReviewedHere = useCallback(() => {
+    if (!here) return;
+    const hunks = marks.hunksOf(here.path);
+    marks.update((current, at) =>
+      setFileReviewed(
+        current,
+        here.path,
+        hunks,
+        hunks.some((hunk) => !current.hunks[`${here.path}@${hunk.id}`]?.reviewed),
+        at,
+      ),
+    );
+  }, [here, marks]);
+
+  /** Esc closes one thing at a time, nearest first. */
+  const closeTop = useCallback(() => {
+    if (showHelp) setShowHelp(false);
+    else if (showFindings) setShowFindings(false);
+    else if (showCommits) setShowCommits(false);
+  }, [showHelp, showFindings, showCommits]);
+
+  useKeys({
+    j: () => stepFile(1),
+    k: () => stepFile(-1),
+    n: () => void stepHunk(1),
+    p: () => void stepHunk(-1),
+    Backspace: () => setTrail([]),
+    "/": () => document.querySelector<HTMLInputElement>(".prform input")?.select(),
+    v: toggleReviewedHere,
+    c: () => setShowFindings((open) => !open),
+    s: () => setShowCommits((open) => !open),
+    "1": () => isChanged && setMode("split"),
+    "2": () => isChanged && setMode("diff"),
+    "3": () => setMode("file"),
+    f: fullscreen.toggle,
+    "?": () => setShowHelp((open) => !open),
+    Escape: closeTop,
+  });
+
+  const onSymbolClick = useCallback(
+    async (line: number, character: number) => {
+      if (!review || !here) return;
+      setNotice(null);
+      setResolving(true);
+      try {
+        const { definitions, external, unsupported, unknown, reason } = await resolveDefinition(
+          review.pr.owner, review.pr.repo, review.pr.number, review.pr.headSha,
+          here.path, line, character,
+        );
+        const target = definitions[0];
+        if (unsupported) {
+          setNotice(reason ?? "Not applicable — no language server for this file type.");
+        } else if (unknown) {
+          setNotice(`Unknown — the language server could not place this. ${unknown}`);
+        } else if (external) {
+          setNotice("Defined outside this repo — a dependency or the standard library.");
+        } else if (!target) {
+          setNotice("No definition found here.");
+        } else if (target.path === here.path && target.line === here.line) {
+          setNotice("Already at the definition.");
+        } else {
+          setTrail((current) =>
+            pushHop(current, current.length - 1, {
+              path: target.path,
+              line: target.line,
+              ring: ringOf(target.path),
+            }),
+          );
+        }
+      } catch (cause) {
+        setNotice(cause instanceof Error ? cause.message : String(cause));
+      } finally {
+        setResolving(false);
+      }
+    },
+    [review, here, ringOf],
+  );
+
+  return (
+    <div className="app">
+      <header className="topbar">
+        <span className="brand">better-review</span>
+        <form
+          className="prform"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void open(ref, null);
+          }}
+        >
+          <input
+            value={ref}
+            onChange={(event) => setRef(event.target.value)}
+            onPaste={(event) => {
+              // Pasting a PR link is the whole gesture — do not also make the
+              // user find the button.
+              const pasted = event.clipboardData.getData("text").trim();
+              if (!pasted) return;
+              event.preventDefault();
+              setRef(pasted);
+              void open(pasted, null);
+            }}
+            placeholder="Paste a PR link, or owner/repo#123"
+            aria-label="Pull request"
+            spellCheck={false}
+          />
+          <button type="submit" disabled={busy}>
+            {busy ? "Opening…" : "Open"}
+          </button>
+        </form>
+        {review && (
+          <>
+            <Branches pr={review.pr} />
+            {review.pr.draft && <span className="badge draft">draft</span>}
+            {review.pr.state !== "open" && <span className="badge">{review.pr.state}</span>}
+            <span className="pr-title">{review.pr.title}</span>
+            {commitFilter && (
+              <button
+                className="badge filter"
+                onClick={() => {
+                  setCommitFilter(null);
+                  setTrail([]);
+                }}
+                title="Back to the whole pull request"
+              >
+                commit {commitFilter.slice(0, 7)} &times;
+              </button>
+            )}
+            <span className="counts">
+              <span><b>{review.changed.length}</b> changed</span>
+              <button className="counts-link" onClick={() => setShowCommits((open) => !open)}>
+                <b>{review.commits.length}</b> commits
+              </button>
+            </span>
+          </>
+        )}
+        <button
+          className="helpopen"
+          aria-pressed={showHelp}
+          title="How this works, and the keys — ?"
+          onClick={() => setShowHelp((open) => !open)}
+        >
+          ?
+        </button>
+        <FullscreenButton fullscreen={fullscreen} />
+      </header>
+
+      {error && <p className="banner">{error}</p>}
+
+      <Trail
+        trail={trail}
+        onJump={(index) => setTrail((current) => truncateTo(current, index))}
+        onBackToChanges={() => setTrail([])}
+      />
+
+      {review && (
+        <div className="modebar">
+          <span className="seg-label">View</span>
+          <div className="seg">
+            {(["split", "diff", "file"] as const).map((option) => (
+              <button
+                key={option}
+                aria-pressed={isChanged ? mode === option : option === "file"}
+                disabled={!isChanged}
+                title={isChanged ? undefined : "This file is not changed by the pull request"}
+                onClick={() => setMode(option)}
+              >
+                {option === "split" ? "Diff + file" : option === "diff" ? "Diff only" : "Whole file"}
+              </button>
+            ))}
+          </div>
+          {here && <CopyPath path={here.path} line={here.line > 0 ? here.line : null} />}
+          <button
+            className={`findings-open${flags.length > 0 ? " some" : ""}`}
+            aria-pressed={showFindings}
+            onClick={() => setShowFindings((open) => !open)}
+            title="Flagged hunks, and publishing them to GitHub"
+          >
+            <span className="findings-flag" aria-hidden="true">
+              ⚑
+            </span>{" "}
+            {flags.length} {flags.length === 1 ? "finding" : "findings"}
+          </button>
+          {marks.saving && <span className="seg-label">saving…</span>}
+          {marks.error && <span className="notice">{marks.error}</span>}
+          {diffLoading && <span className="seg-label">reading diff…</span>}
+          <ThemePicker choice={theme.choice} onChange={theme.setChoice} />
+        </div>
+      )}
+
+      {showHelp && <Help onClose={() => setShowHelp(false)} />}
+
+      {review && showFindings && (
+        <Findings
+          findings={flags}
+          pr={review.pr}
+          onClose={() => setShowFindings(false)}
+          onOpen={(path) => {
+            selectFile(path);
+            setShowFindings(false);
+          }}
+          onPublished={marks.replace}
+        />
+      )}
+
+      {review && showCommits && (
+        <CommitsPanel
+          commits={review.commits}
+          selected={commitFilter}
+          onSelect={(sha) => {
+            setCommitFilter(sha);
+            setTrail([]);
+          }}
+          onClose={() => setShowCommits(false)}
+        />
+      )}
+
+      <div
+        className={`panes mode-${isChanged ? mode : "file"}`}
+        style={{ "--explorer-w": `${explorer.width}px` } as CSSProperties}
+      >
+        {review ? (
+          <Explorer
+            changed={visibleChanged}
+            marks={marks.marks}
+            index={marks.index}
+            selected={here?.path ?? null}
+            rings={rings}
+            onSelect={selectFile}
+            onToggleReviewed={(path) =>
+              marks.update((current, at) =>
+                setFileReviewed(
+                  current,
+                  path,
+                  marks.hunksOf(path),
+                  // Anything short of fully reviewed means "mark the rest".
+                  marks.hunksOf(path).some((hunk) => !current.hunks[`${path}@${hunk.id}`]?.reviewed),
+                  at,
+                ),
+              )
+            }
+          />
+        ) : (
+          <nav className="explorer">
+            <p className="pane-empty">Open a pull request to begin.</p>
+          </nav>
+        )}
+        <div
+          className="resizer"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize the file explorer"
+          aria-valuenow={explorer.width}
+          tabIndex={0}
+          onPointerDown={explorer.startDrag}
+          onKeyDown={explorer.nudge}
+          onDoubleClick={explorer.reset}
+          title="Drag to resize · double-click to reset"
+        />
+
+        {isChanged && mode !== "file" && (
+          <DiffPane
+            diff={diff}
+            loading={diffLoading}
+            theme={theme.resolved}
+            marks={marks.marks}
+            onJump={setJumpLine}
+            onToggleHunk={(id, header) =>
+              here && marks.update((current, at) => toggleHunk(current, here.path, id, header, at))
+            }
+            onNote={(anchor, body) =>
+              here &&
+              marks.update((current, at) =>
+                setLineNote(current, { path: here.path, ...anchor }, body, at),
+              )
+            }
+          />
+        )}
+        {!(isChanged && mode === "diff") && (
+        <CodePane
+          path={here?.path ?? null}
+          text={body && here && body.path === here.path ? body.text : null}
+          ring={
+            ringHere?.kind === "changed"
+              ? "changed"
+              : ringHere?.kind === "ring"
+                ? `ring ${ringHere.ring}`
+                : ringHere?.kind === "out-of-range"
+                  ? "out of range"
+                  : ringHere?.kind === "not-applicable"
+                    ? "not applicable"
+                    : rings.done
+                      ? "unknown"
+                      : "working"
+          }
+          focusLine={jumpLine ?? (here && here.line > 0 ? here.line : null)}
+          changedLines={changedLines}
+          resolving={resolving}
+          notice={notice}
+          theme={theme.resolved}
+          onSymbolClick={(line, character) => void onSymbolClick(line, character)}
+        />
+        )}
+      </div>
+    </div>
+  );
+}

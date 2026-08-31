@@ -1,0 +1,109 @@
+[
+  {
+    "label": "gopls COLD (on-disk cache deleted)",
+    "initializeMs": 2043,
+    "firstDefinitionMsFromSpawn": 14821,
+    "definitionAttempts": 1,
+    "definitionTimedOut": false,
+    "definitionAnswer": [
+      "identity.go:190"
+    ],
+    "firstIncomingCallsMsFromSpawn": 14932,
+    "incomingCallers": [
+      "CreateIdentityIntercomJWT",
+      "TestAddAttributesIfPresent",
+      "TestAddAttributesIfPresent_MultipleAttributes"
+    ],
+    "incomingTimedOut": false,
+    "warmDefP50": 1.2,
+    "warmCHP50": 3.4,
+    "diagnostics": 0,
+    "diagnosticsSample": [],
+    "rssMB": 181.2,
+    "logTail": "a.manathunga/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.0.darwin-arm64 GoVersion:25 GoVersionOutput:go version go1.26.0 darwin/arm64 |  ExplicitGOWORK: EffectiveGOPACKAGESDRIVER:} | \tenv_overlay=[] | 2026/08/24 14:49:21 go/packages.Load #1 | \tview_id=\"1\" | \tsnapshot=0 | \tdirectory=/Users/nalaka.manathunga/code/auth | \tquery=[/Users/nalaka.manathunga/code/auth/... builtin] | \tpackages=24 | \tduration=2.361030583s | "
+  },
+  {
+    "label": "gopls cache size after cold run",
+    "note": "39 MB"
+  },
+  {
+    "label": "gopls WARM restart #1",
+    "initializeMs": 4031,
+    "firstDefinitionMsFromSpawn": 41825,
+    "definitionAttempts": 1,
+    "definitionTimedOut": false,
+    "definitionAnswer": [
+      "identity.go:190"
+    ],
+    "firstIncomingCallsMsFromSpawn": 42567,
+    "incomingCallers": [
+      "CreateIdentityIntercomJWT",
+      "TestAddAttributesIfPresent",
+      "TestAddAttributesIfPresent_MultipleAttributes"
+    ],
+    "incomingTimedOut": false,
+    "warmDefP50": 6.2,
+    "warmCHP50": 26.9,
+    "diagnostics": 0,
+    "diagnosticsSample": [],
+    "rssMB": 258,
+    "logTail": "aka.manathunga/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.0.darwin-arm64 GoVersion:25 GoVersionOutput:go version go1.26.0 darwin/arm64 |  ExplicitGOWORK: EffectiveGOPACKAGESDRIVER:} | \tenv_overlay=[] | 2026/08/24 14:51:05 go/packages.Load #1 | \tview_id=\"1\" | \tsnapshot=0 | \tdirectory=/Users/nalaka.manathunga/code/auth | \tquery=[/Users/nalaka.manathunga/code/auth/... builtin] | \tpackages=24 | \tduration=27.594344s | "
+  },
+  {
+    "label": "gopls WARM restart #2",
+    "initializeMs": 2025,
+    "firstDefinitionMsFromSpawn": 25037,
+    "definitionAttempts": 1,
+    "definitionTimedOut": false,
+    "definitionAnswer": [
+      "identity.go:190"
+    ],
+    "firstIncomingCallsMsFromSpawn": 25230,
+    "incomingCallers": [
+      "CreateIdentityIntercomJWT",
+      "TestAddAttributesIfPresent",
+      "TestAddAttributesIfPresent_MultipleAttributes"
+    ],
+    "incomingTimedOut": false,
+    "warmDefP50": 1.4,
+    "warmCHP50": 5.4,
+    "diagnostics": 0,
+    "diagnosticsSample": [],
+    "rssMB": 239.4,
+    "logTail": ".manathunga/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.0.darwin-arm64 GoVersion:25 GoVersionOutput:go version go1.26.0 darwin/arm64 |  ExplicitGOWORK: EffectiveGOPACKAGESDRIVER:} | \tenv_overlay=[] | 2026/08/24 14:51:44 go/packages.Load #1 | \tview_id=\"1\" | \tsnapshot=0 | \tdirectory=/Users/nalaka.manathunga/code/auth | \tquery=[/Users/nalaka.manathunga/code/auth/... builtin] | \tpackages=24 | \tduration=15.389015333s | "
+  },
+  {
+    "label": "gopls with EMPTY GOMODCACHE + GOPROXY=off",
+    "initializeMs": 1066,
+    "firstDefinitionMsFromSpawn": 121303,
+    "definitionAttempts": 496,
+    "definitionTimedOut": true,
+    "error": "TypeError: (d.result ?? []).map is not a function",
+    "logTail": ""
+  },
+  {
+    "label": "gopls @ COPY with type error (2nd visit)",
+    "initializeMs": 432,
+    "firstDefinitionMsFromSpawn": 23763,
+    "definitionAttempts": 1,
+    "definitionTimedOut": false,
+    "definitionAnswer": [
+      "identity.go:190"
+    ],
+    "firstIncomingCallsMsFromSpawn": 23950,
+    "incomingCallers": [
+      "CreateIdentityIntercomJWT",
+      "TestAddAttributesIfPresent",
+      "TestAddAttributesIfPresent_MultipleAttributes"
+    ],
+    "incomingTimedOut": false,
+    "warmDefP50": 1.3,
+    "warmCHP50": 4.9,
+    "diagnostics": 1,
+    "diagnosticsSample": [
+      "identity.go: cannot use \"not an int\" (untyped string constant) as int value in return statement"
+    ],
+    "rssMB": 567.1,
+    "logTail": "xplicitGOWORK: EffectiveGOPACKAGESDRIVER:} | \tenv_overlay=[] | 2026/08/24 14:54:22 go/packages.Load #1 | \tview_id=\"1\" | \tsnapshot=0 | \tdirectory=/Users/nalaka.manathunga/code/better-review/.scratch/code-review-client/research-01/degrade/auth-broken | \tquery=[/Users/nalaka.manathunga/code/better-review/.scratch/code-review-client/research-01/degrade/auth-broken/... builtin] | \tpackages=24 | \tduration=14.30787175s | "
+  }
+]

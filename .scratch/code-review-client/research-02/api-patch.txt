@@ -1,0 +1,14 @@
+@@ -11,4 +11,13 @@ const (
+ 	ConfigSecretsManagerAnalyticsSecretARN         = "CONFIG_SECRETS_MANAGER_USER_TRACKING_ID_SECRET_ARN"          //nolint:gosec
+ 	ConfigSecretsManagerSupportLoginCredentialsARN = "CONFIG_SECRETS_MANAGER_SUPPORT_LOGIN_CREDENTIALS_SECRET_ARN" //nolint:gosec
+ 	ConfigSecretsManagerIntercomJWTSecretARN       = "CONFIG_SECRETS_MANAGER_INTERCOM_JWT_SECRET_ARN"              //nolint:gosec
++
++	// IAM API integration
++	ConfigIAMAPIBaseURL        = "CONFIG_IAM_API_BASE_URL"
++	ConfigIAMClientMode        = "CONFIG_IAM_CLIENT_MODE"         // "mock" | "http"
++	ConfigEntityMgmtClientMode = "CONFIG_ENTITY_MGMT_CLIENT_MODE" // "mock" | "http"
++	ConfigEntityMgmtAPIBaseURL = "CONFIG_ENTITY_MGMT_API_BASE_URL"
++
++	// per-account config var key (read via systemManager.GetConfigVars)
++	AccountConfigVarRolesV2 = "rolesv2"
+ )

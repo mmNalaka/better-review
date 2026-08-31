@@ -1,0 +1,805 @@
+<title>Explorer Row Budget</title>
+<style>
+  /* ── PROTOTYPE — throwaway. Ticket 06. Three explorer treatments, ?variant=A|B|C ── */
+
+  :root {
+    --ground: #EEF1F4;
+    --surface: #FFFFFF;
+    --surface-2: #F5F8FA;
+    --surface-3: #E7ECF1;
+    --line: #D5DDE4;
+    --line-soft: #E4EAEF;
+    --ink: #101720;
+    --muted: #566573;
+    --faint: #8695A3;
+    --accent: #0E6E7D;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #D6E9ED;
+    --add: #1F7A46;
+    --del: #A83A32;
+    --flag: #9A6200;
+    --flag-soft: #F5E9D2;
+    --stale: #8A5A00;
+    --ring0: #0E6E7D;
+    --ring1: #3F8F9B;
+    --ring2: #79AFB8;
+    --ring3: #AFCDD3;
+    --ring-out: #B9C3CC;
+    --shadow: 0 1px 2px rgba(16, 23, 32, .06), 0 8px 24px rgba(16, 23, 32, .08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0F1418;
+      --surface: #151B21;
+      --surface-2: #1A222A;
+      --surface-3: #202A33;
+      --line: #29343E;
+      --line-soft: #212B34;
+      --ink: #DEE6ED;
+      --muted: #8A99A7;
+      --faint: #67737F;
+      --accent: #4FB3C4;
+      --accent-ink: #08171B;
+      --accent-soft: #163740;
+      --add: #4FAC72;
+      --del: #DB6E64;
+      --flag: #D5A03C;
+      --flag-soft: #3A2E14;
+      --stale: #D5A03C;
+      --ring0: #4FB3C4;
+      --ring1: #3D8D9B;
+      --ring2: #2C6673;
+      --ring3: #22454E;
+      --ring-out: #3A4650;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .45);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0F1418;
+    --surface: #151B21;
+    --surface-2: #1A222A;
+    --surface-3: #202A33;
+    --line: #29343E;
+    --line-soft: #212B34;
+    --ink: #DEE6ED;
+    --muted: #8A99A7;
+    --faint: #67737F;
+    --accent: #4FB3C4;
+    --accent-ink: #08171B;
+    --accent-soft: #163740;
+    --add: #4FAC72;
+    --del: #DB6E64;
+    --flag: #D5A03C;
+    --flag-soft: #3A2E14;
+    --stale: #D5A03C;
+    --ring0: #4FB3C4;
+    --ring1: #3D8D9B;
+    --ring2: #2C6673;
+    --ring3: #22454E;
+    --ring-out: #3A4650;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .45);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── app frame ─────────────────────────────────────────────── */
+
+  .app {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    height: 100vh;
+    min-height: 560px;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 10px 18px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+
+  .repo {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -.1px;
+  }
+
+  .repo .num { color: var(--accent); }
+
+  .pr-title {
+    color: var(--muted);
+    font-size: 13px;
+    flex: 1;
+    min-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .counts {
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+
+  .counts b {
+    color: var(--ink);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  .panes {
+    display: grid;
+    grid-template-columns: minmax(330px, 410px) 1fr;
+    overflow: hidden;
+  }
+
+  @media (max-width: 860px) {
+    .panes { grid-template-columns: 1fr; }
+    .codepane { display: none; }
+  }
+
+  .explorer {
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 88px;
+  }
+
+  /* ── shared explorer atoms ─────────────────────────────────── */
+
+  .exhead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line-soft);
+    padding: 10px 12px 9px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .eyebrow {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    color: var(--faint);
+    font-weight: 600;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 12px;
+    min-height: 25px;
+  }
+
+  .row:hover { background: var(--surface-2); }
+  .row.sel { background: var(--accent-soft); }
+
+  .name {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .dim { color: var(--faint); }
+  .path-prefix { color: var(--faint); }
+
+  .rev {
+    width: 13px;
+    flex: 0 0 13px;
+    text-align: center;
+    font-size: 11px;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .rev.none { color: var(--surface-3); }
+  .rev.stale { color: var(--stale); }
+
+  .kind {
+    width: 11px;
+    flex: 0 0 11px;
+    text-align: center;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10.5px;
+    font-weight: 700;
+  }
+
+  .kind.A { color: var(--add); }
+  .kind.M { color: var(--accent); }
+  .kind.D { color: var(--del); }
+  .kind.none { color: transparent; }
+
+  .ring {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--faint);
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex: 0 0 8px;
+  }
+
+  .dot.r0 { background: var(--ring0); }
+  .dot.r1 { background: var(--ring1); }
+  .dot.r2 { background: var(--ring2); }
+  .dot.r3 { background: var(--ring3); }
+  .dot.out { background: transparent; border: 1px solid var(--ring-out); }
+  .dot.unk { background: transparent; border: 1px dashed var(--flag); }
+
+  .flagdot {
+    width: 12px;
+    flex: 0 0 12px;
+    text-align: center;
+    color: var(--flag);
+    font-size: 10px;
+  }
+
+  .churn {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    color: var(--faint);
+    flex: 0 0 auto;
+    letter-spacing: -.2px;
+  }
+
+  .churn .p { color: var(--add); }
+  .churn .m { color: var(--del); }
+
+  .group {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 15px 12px 5px;
+    border-top: 1px solid var(--line-soft);
+    margin-top: 4px;
+  }
+
+  .group h3 {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: .02em;
+  }
+
+  .group .n {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10.5px;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dirline {
+    padding: 9px 12px 2px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    color: var(--faint);
+  }
+
+  .hunks {
+    padding: 2px 12px 8px 33px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .hunk {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    color: var(--muted);
+    padding: 2px 0;
+    flex-wrap: wrap;
+  }
+
+  .hunk .at { color: var(--faint); flex: 0 0 68px; }
+
+  .note {
+    color: var(--flag);
+    background: var(--flag-soft);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 10.5px;
+  }
+
+  .toggles { display: flex; gap: 4px; flex-wrap: wrap; }
+
+  .tog {
+    font: inherit;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .tog[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  .tog:focus-visible, .swbtn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .bar {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface-3);
+    overflow: hidden;
+  }
+
+  .bar i { display: block; height: 100%; background: var(--accent); }
+
+  /* ── code pane ─────────────────────────────────────────────── */
+
+  .codepane {
+    overflow: auto;
+    background: var(--surface-2);
+    padding: 0 0 80px;
+  }
+
+  .filehead {
+    position: sticky;
+    top: 0;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line-soft);
+    padding: 11px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .filehead .fname {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  pre.code {
+    margin: 0;
+    padding: 12px 0 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.55;
+    overflow-x: auto;
+  }
+
+  .ln { display: flex; }
+
+  .ln .g {
+    flex: 0 0 52px;
+    text-align: right;
+    padding-right: 12px;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+  }
+
+  .ln .t { white-space: pre; padding-right: 18px; }
+  .ln.add { background: color-mix(in srgb, var(--add) 11%, transparent); }
+
+  /* ── switcher ──────────────────────────────────────────────── */
+
+  .switcher {
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: flex;
+    align-items: stretch;
+    background: var(--ink);
+    color: var(--ground);
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    font-size: 12.5px;
+    max-width: calc(100vw - 24px);
+  }
+
+  .swbtn {
+    font: inherit;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    padding: 8px 14px;
+    cursor: pointer;
+    opacity: .75;
+  }
+
+  .swbtn:hover { opacity: 1; background: rgba(127, 127, 127, .22); }
+
+  .swlabel {
+    padding: 8px 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .swkey {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 700;
+  }
+
+  .swhint {
+    opacity: .55;
+    font-size: 11px;
+    border-left: 1px solid rgba(127, 127, 127, .35);
+    padding-left: 10px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 10.5px;
+    color: var(--faint);
+    align-items: center;
+  }
+
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+
+  .callout {
+    margin: 8px 12px 4px;
+    padding: 8px 10px;
+    border-left: 2px solid var(--accent);
+    background: var(--surface-2);
+    font-size: 11.5px;
+    color: var(--muted);
+    border-radius: 0 4px 4px 0;
+  }
+
+  .callout b { color: var(--ink); font-weight: 600; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="app">
+  <header class="topbar">
+    <span class="repo">sitoo/auth <span class="num">#146</span></span>
+    <span class="pr-title">SCIM: provision users through the IAM API</span>
+    <span class="counts">
+      <span><b>32</b> changed</span>
+      <span><b>5</b> reviewed</span>
+      <span><b>3</b> flagged</span>
+      <span><b>231</b> in repo</span>
+    </span>
+  </header>
+
+  <div class="panes">
+    <nav class="explorer" id="explorer" aria-label="File explorer"></nav>
+
+    <section class="codepane">
+      <div class="filehead">
+        <span class="fname">middleware/forwarded_authorization.go</span>
+        <span class="ring"><i class="dot r0"></i> changed</span>
+        <span class="churn"><span class="p">+29</span></span>
+        <span class="legend"><span>hop 0 &middot; the changes</span></span>
+      </div>
+      <pre class="code" id="code"></pre>
+    </section>
+  </div>
+</div>
+
+<div class="switcher" role="group" aria-label="Prototype variant switcher">
+  <button class="swbtn" id="prev" aria-label="Previous variant">&larr;</button>
+  <span class="swlabel"><span class="swkey" id="swkey">A</span><span id="swname">Tree, everything permanent</span><span class="swhint">&larr; &rarr;</span></span>
+  <button class="swbtn" id="next" aria-label="Next variant">&rarr;</button>
+</div>
+
+<script>
+  /* PROTOTYPE — ticket 06. Paths and churn are real sitoo/auth#146 + the real 231-file tree.
+     Ring and review values are fixtures; no call graph was computed here. */
+
+  // path, kind (A/M/D/null), +adds, -dels, ring, review, hunks [done,total], flags
+  const F = [
+    // ── changed by the PR: every one of these is ring state "changed" ──
+    ["app/constants.go", "M", 9, 0, "r0", "reviewed", [1, 1], 0],
+    ["bootstrap/init_alb.go", "M", 30, 1, "r0", "reviewed", [2, 2], 0],
+    ["docs/superpowers/plans/2026-05-08-scim-iam-api.md", "A", 3319, 0, "out", "none", [0, 1], 0],
+    ["docs/superpowers/plans/2026-05-12-rolesv2-slug-routing.md", "A", 1263, 0, "out", "none", [0, 1], 0],
+    ["docs/superpowers/plans/2026-05-19-scim-iam-upsert-by-slug.md", "A", 1322, 0, "out", "none", [0, 1], 0],
+    ["docs/superpowers/plans/2026-06-03-scim-iam-single-client.md", "A", 568, 0, "out", "none", [0, 1], 0],
+    ["docs/superpowers/specs/2026-05-08-scim-iam-api-design.md", "A", 352, 0, "out", "none", [0, 1], 0],
+    ["docs/superpowers/specs/2026-05-11-rolesv2-slug-design.md", "A", 346, 0, "out", "none", [0, 1], 0],
+    ["docs/superpowers/specs/2026-05-19-scim-iam-upsert-design.md", "A", 298, 0, "out", "none", [0, 1], 0],
+    ["docs/superpowers/specs/2026-06-03-single-client-design.md", "A", 201, 0, "out", "none", [0, 1], 0],
+    ["infra/alarms.tf", "M", 96, 0, "unk", "none", [0, 3], 0],
+    ["integrationtest/scim_iam_test.go", "A", 932, 0, "r0", "none", [0, 6], 0],
+    ["integrationtest/scim_test.go", "M", 7, 5, "r0", "reviewed", [1, 1], 0],
+    ["middleware/forwarded_authorization.go", "A", 29, 0, "r0", "partial", [1, 2], 1],
+    ["middleware/forwarded_authorization_test.go", "A", 83, 0, "r0", "none", [0, 2], 0],
+    ["provider/entitymgmt/mock.go", "A", 23, 0, "r0", "reviewed", [1, 1], 0],
+    ["provider/entitymgmt/mock_test.go", "A", 27, 0, "r0", "none", [0, 1], 0],
+    ["provider/entitymgmt/provider.go", "A", 12, 0, "r0", "reviewed", [1, 1], 0],
+    ["provider/iam/client.go", "A", 22, 0, "r0", "none", [0, 1], 0],
+    ["provider/iam/http.go", "A", 202, 0, "r0", "partial", [2, 5], 1],
+    ["provider/iam/http_test.go", "A", 223, 0, "r0", "none", [0, 4], 0],
+    ["provider/iam/mock.go", "A", 145, 0, "r0", "none", [0, 2], 0],
+    ["provider/iam/mock_test.go", "A", 96, 0, "r0", "none", [0, 2], 0],
+    ["provider/iam/types.go", "A", 55, 0, "r0", "none", [0, 1], 0],
+    ["repository/mysql/integration_test_helper.go", "M", 6, 2, "r0", "none", [0, 1], 0],
+    ["repository/mysql/user.go", "M", 486, 18, "r0", "stale", [4, 9], 1],
+    ["repository/mysql/user_test.go", "M", 661, 1, "r0", "none", [0, 11], 0],
+    ["service/scim.go", "M", 626, 233, "r0", "partial", [3, 12], 0],
+    ["service/scim_iam.go", "A", 440, 0, "r0", "none", [0, 7], 0],
+    ["service/scim_iam_test.go", "A", 423, 0, "r0", "none", [0, 5], 0],
+    ["service/session.go", "M", 0, 14, "r0", "stale", [1, 1], 0],
+    ["service/util.go", "M", 16, 0, "r0", "none", [0, 1], 0],
+
+    // ── untouched by the PR: this is where the ring gradient actually lives ──
+    ["generated/service/api_scim_service.go", null, 0, 0, "r1", "none", null, 0],
+    ["generated/service/api_sessions_service.go", null, 0, 0, "r1", "none", null, 0],
+    ["generated/service/container.go", null, 0, 0, "r1", "none", null, 0],
+    ["repository/mysql/session.go", null, 0, 0, "r1", "none", null, 0],
+    ["generated/handler/api_scim_handler.go", null, 0, 0, "r2", "none", null, 0],
+    ["generated/handler/api_sessions_handler.go", null, 0, 0, "r2", "none", null, 0],
+    ["generated/handler/helper.go", null, 0, 0, "r2", "none", null, 0],
+    ["bootstrap/init_secrets_manager.go", null, 0, 0, "r2", "none", null, 0],
+    ["cmd/http/main.go", null, 0, 0, "r3", "none", null, 0],
+    ["cmd/local/http/main.go", null, 0, 0, "r3", "none", null, 0],
+    ["generated/handler/handlers.go", null, 0, 0, "unk", "none", null, 0],
+    ["generated/handler/middleware.go", null, 0, 0, "unk", "none", null, 0],
+    ["generated/handler/req_logger.go", null, 0, 0, "unk", "none", null, 0],
+    ["generated/model/model_scim_user.go", null, 0, 0, "out", "none", null, 0],
+    ["generated/model/model_scim_patch_ops.go", null, 0, 0, "out", "none", null, 0],
+    ["generated/model/model_session.go", null, 0, 0, "out", "none", null, 0],
+    ["generated/middleware/error_response.go", null, 0, 0, "out", "none", null, 0],
+    ["api/scim.mdx", null, 0, 0, "out", "none", null, 0],
+    ["api/openapi.yaml", null, 0, 0, "out", "none", null, 0],
+    [".github/workflows/pr.yml", null, 0, 0, "out", "none", null, 0],
+    [".github/workflows/main.yml", null, 0, 0, "out", "none", null, 0],
+    [".devcontainer/devcontainer.json", null, 0, 0, "out", "none", null, 0],
+    ["docs/data_access_patterns.md", null, 0, 0, "out", "none", null, 0],
+    ["Makefile", null, 0, 0, "out", "none", null, 0],
+    ["README.md", null, 0, 0, "out", "none", null, 0],
+  ];
+
+  const RING_LABEL = { r0: "changed", r1: "1", r2: "2", r3: "3", out: "out of range", unk: "unknown" };
+  const REV_GLYPH = { reviewed: "✓", partial: "◑", stale: "⚠", none: "·" };
+  const SEL = "middleware/forwarded_authorization.go";
+
+  const changed = F.filter(f => f[1]);
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const base = p => p.slice(p.lastIndexOf("/") + 1);
+  const dir = p => p.includes("/") ? p.slice(0, p.lastIndexOf("/") + 1) : "";
+  const dotCls = r => r === "out" ? "out" : r === "unk" ? "unk" : r;
+
+  function ringEl(ring) {
+    const txt = ["r1", "r2", "r3"].includes(ring) ? ring[1] : "";
+    return `<span class="ring" title="ring: ${RING_LABEL[ring]}"><i class="dot ${dotCls(ring)}"></i>${txt}</span>`;
+  }
+
+  function churnEl(f) {
+    if (!f[1]) return "";
+    const p = f[2] ? `<span class="p">+${f[2]}</span>` : "";
+    const m = f[3] ? `<span class="m">−${f[3]}</span>` : "";
+    return `<span class="churn">${p}${m}</span>`;
+  }
+
+  const revEl = f => `<span class="rev ${f[5]}" title="${f[5]}">${REV_GLYPH[f[5]]}</span>`;
+
+  /* ── Variant A — tree, every signal permanent ───────────────── */
+  function variantA() {
+    const byDir = {};
+    F.forEach(f => { (byDir[dir(f[0])] = byDir[dir(f[0])] || []).push(f); });
+    let h = `<div class="exhead">
+      <span class="eyebrow">Whole repo &middot; 231 files</span>
+      <div class="legend">
+        <span><i class="dot r0"></i>changed</span><span><i class="dot r1"></i>1</span>
+        <span><i class="dot r2"></i>2</span><span><i class="dot r3"></i>3</span>
+        <span><i class="dot out"></i>out of range</span><span><i class="dot unk"></i>unknown</span>
+      </div></div>
+      <p class="callout">Every signal has a permanent slot &mdash; nothing hidden, nothing a mode. The row is carrying <b>five</b> things at once. Scroll and judge whether you can still find a filename.</p>`;
+    Object.keys(byDir).sort().forEach(d => {
+      h += `<div class="dirline">${d || "./"}</div>`;
+      byDir[d].forEach(f => {
+        h += `<div class="row ${f[0] === SEL ? "sel" : ""}">
+          ${revEl(f)}
+          <span class="kind ${f[1] || "none"}">${f[1] || ""}</span>
+          <span class="name ${f[1] ? "" : "dim"}">${base(f[0])}</span>
+          <span class="flagdot">${f[7] ? "⚑" : ""}</span>
+          ${churnEl(f)}
+          ${ringEl(f[4])}
+        </div>`;
+      });
+    });
+    return h;
+  }
+
+  /* ── Variant B — progress first, rings on demand ────────────── */
+  function variantB() {
+    const done = changed.filter(f => f[5] === "reviewed");
+    const stale = changed.filter(f => f[5] === "stale");
+    const open = changed.filter(f => f[5] === "none" || f[5] === "partial");
+    const pct = Math.round(done.length / changed.length * 100);
+
+    const sec = (title, arr, note) => {
+      if (!arr.length) return "";
+      let s = `<div class="group"><h3>${title}</h3><span class="n">${arr.length}</span>${note ? `<span class="n">&mdash; ${note}</span>` : ""}</div>`;
+      arr.forEach(f => {
+        const hk = f[6] && f[6][1] > 1 ? `<span class="churn">${f[6][0]}/${f[6][1]}</span>` : "";
+        s += `<div class="row ${f[0] === SEL ? "sel" : ""}">
+          ${revEl(f)}
+          <span class="name"><span class="path-prefix">${dir(f[0])}</span>${base(f[0])}</span>
+          <span class="flagdot">${f[7] ? "⚑" : ""}</span>
+          ${hk}${churnEl(f)}
+        </div>`;
+        if (f[0] === SEL) {
+          s += `<div class="hunks">
+            <div class="hunk"><span class="rev reviewed">✓</span><span class="at">@@ 1,14</span>ForwardedAuthorizationToCtx</div>
+            <div class="hunk"><span class="rev none">·</span><span class="at">@@ 15,29</span>ForwardedAuthorizationFromCtx
+              <span class="note">⚑ no test for the empty-header path</span></div>
+          </div>`;
+        }
+      });
+      return s;
+    };
+
+    return `<div class="exhead">
+        <span class="eyebrow">This review &middot; ${done.length} of ${changed.length} files</span>
+        <div class="bar"><i style="width:${pct}%"></i></div>
+        <div class="toggles">
+          <button class="tog" aria-pressed="true">Changed files</button>
+          <button class="tog" aria-pressed="false">Whole repo</button>
+          <button class="tog" aria-pressed="false">Show rings</button>
+        </div>
+      </div>
+      <p class="callout">Ordered by what is left, not by path. Rings are a mode rather than a column &mdash; because on changed files the ring never varies: it is always <b>changed</b>.</p>
+      ${sec("Needs another look", stale, "content moved under your mark")}
+      ${sec("Not reviewed", open)}
+      ${sec("Reviewed", done)}`;
+  }
+
+  /* ── Variant C — rings first, path secondary ────────────────── */
+  function variantC() {
+    const bands = [
+      ["changed", "r0", "the PR touched these"],
+      ["ring 1", "r1", "calls changed code directly"],
+      ["ring 2", "r2", ""],
+      ["ring 3", "r3", ""],
+      ["unknown", "unk", "no call-hierarchy identity"],
+      ["out of range", "out", "no call path to the change"],
+    ];
+    let h = `<div class="exhead">
+      <span class="eyebrow">By distance from the change</span>
+      <div class="toggles">
+        <button class="tog" aria-pressed="true">Rings</button>
+        <button class="tog" aria-pressed="false">Tree</button>
+      </div></div>
+      <p class="callout">Structure <i>is</i> the blast radius &mdash; reading downward is reading outward. But path context is gone, and the ten changed doc files land in <b>out of range</b>, mixed in with untouched code.</p>`;
+    bands.forEach(([label, ring, hint]) => {
+      const arr = F.filter(f => f[4] === ring);
+      if (!arr.length) return;
+      h += `<div class="group"><i class="dot ${dotCls(ring)}"></i><h3>${label}</h3><span class="n">${arr.length}</span>${hint ? `<span class="n">&mdash; ${hint}</span>` : ""}</div>`;
+      arr.forEach(f => {
+        h += `<div class="row ${f[0] === SEL ? "sel" : ""}">
+          ${revEl(f)}
+          <span class="kind ${f[1] || "none"}">${f[1] || ""}</span>
+          <span class="name ${f[1] ? "" : "dim"}"><span class="path-prefix">${dir(f[0])}</span>${base(f[0])}</span>
+          <span class="flagdot">${f[7] ? "⚑" : ""}</span>
+          ${churnEl(f)}
+        </div>`;
+      });
+    });
+    return h;
+  }
+
+  const VARIANTS = [
+    ["A", "Tree, everything permanent", variantA],
+    ["B", "Progress first, rings on demand", variantB],
+    ["C", "Rings first, path secondary", variantC],
+  ];
+
+  const PATCH = [
+    "package middleware",
+    "",
+    "import (",
+    "\t\"context\"",
+    "",
+    "\t\"github.com/aws/aws-lambda-go/events\"",
+    "\t\"github.com/sitoo/go-utils-lambda/v2/alb/router\"",
+    ")",
+    "",
+    "type forwardedAuthorizationCtxKey struct{}",
+    "",
+    "// ForwardedAuthorizationToCtx is an ALB middleware that copies the inbound",
+    "// Authorization header into request context.",
+    "// Used to forward credentials to the IAM API.",
+    "func ForwardedAuthorizationToCtx(next router.HandleFunc) router.HandleFunc {",
+    "\treturn func(ctx context.Context, req *events.ALBTargetGroupRequest) (*events.ALBTargetGroupResponse, error) {",
+    "\t\tif hdr := router.GetHeaderValue(ctx, req, \"Authorization\"); hdr != \"\" {",
+    "\t\t\tctx = context.WithValue(ctx, forwardedAuthorizationCtxKey{}, hdr)",
+    "\t\t}",
+    "\t\treturn next(ctx, req)",
+    "\t}",
+    "}",
+  ];
+
+  document.getElementById("code").innerHTML = PATCH
+    .map((l, i) => `<div class="ln add"><span class="g">${i + 1}</span><span class="t">${esc(l)}</span></div>`)
+    .join("");
+
+  function current() {
+    const k = (new URLSearchParams(location.search).get("variant") || "A").toUpperCase();
+    const i = VARIANTS.findIndex(v => v[0] === k);
+    return i === -1 ? 0 : i;
+  }
+
+  function render() {
+    const v = VARIANTS[current()];
+    document.getElementById("explorer").innerHTML = v[2]();
+    document.getElementById("swkey").textContent = v[0];
+    document.getElementById("swname").textContent = v[1];
+  }
+
+  function go(delta) {
+    const i = (current() + delta + VARIANTS.length) % VARIANTS.length;
+    const u = new URL(location.href);
+    u.searchParams.set("variant", VARIANTS[i][0]);
+    history.replaceState(null, "", u);
+    render();
+  }
+
+  document.getElementById("prev").addEventListener("click", () => go(-1));
+  document.getElementById("next").addEventListener("click", () => go(1));
+
+  addEventListener("keydown", e => {
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+    if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+  });
+
+  render();
+</script>
