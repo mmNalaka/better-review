@@ -1,0 +1,371 @@
+{
+  "tls": {
+    "prepareTARGET": [
+      {
+        "kind": 12,
+        "name": "TARGET",
+        "detail": "",
+        "uri": "file:///Users/nalaka.manathunga/code/better-review/.scratch/code-review-client/research-01/fixtures/ts/src/target.ts",
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 0
+          },
+          "end": {
+            "line": 3,
+            "character": 1
+          }
+        },
+        "selectionRange": {
+          "start": {
+            "line": 1,
+            "character": 16
+          },
+          "end": {
+            "line": 1,
+            "character": 22
+          }
+        }
+      }
+    ],
+    "incomingTARGET": [
+      "src/callers.ts:1 callers.ts src [kind=2, fromRanges=1]",
+      "src/callers.ts:11 viaRenamedReExport [kind=12, fromRanges=1]",
+      "src/callers.ts:16 viaNamespaceBarrel [kind=12, fromRanges=1]",
+      "src/callers.ts:54 viaDynamicImport [kind=12, fromRanges=1]",
+      "src/callers.ts:6 directCall [kind=12, fromRanges=1]",
+      "src/callers.ts:61 inner [kind=12, fromRanges=1]",
+      "src/callers.ts:70 go objLit [kind=6, fromRanges=1]",
+      "src/component.tsx:3 Leaf [kind=12, fromRanges=1]",
+      "src/generated.ts:4 generatedCaller [kind=12, fromRanges=1]",
+      "src/target.ts:19 handle AlphaHandler [kind=6, fromRanges=1]",
+      "src/target.ts:8 render Widget [kind=6, fromRanges=1]",
+      "src/unused.ts:4 orphanCaller [kind=12, fromRanges=1]"
+    ],
+    "incomingTARGETms": 19.073874950408936,
+    "incomingIfaceDecl": [
+      "src/callers.ts:32 viaInterface [kind=12, fromRanges=1]",
+      "src/callers.ts:77 directAlphaCall [kind=12, fromRanges=1]",
+      "src/callers.ts:80 directBetaCall [kind=12, fromRanges=1]"
+    ],
+    "incomingIfaceImpl": [
+      "src/callers.ts:32 viaInterface [kind=12, fromRanges=1]",
+      "src/callers.ts:77 directAlphaCall [kind=12, fromRanges=1]",
+      "src/callers.ts:80 directBetaCall [kind=12, fromRanges=1]"
+    ],
+    "implementationOfIfaceMethod": [
+      "src/target.ts:19",
+      "src/target.ts:25"
+    ],
+    "incomingBaseRender": [
+      "src/callers.ts:49 viaWidget [kind=12, fromRanges=1]",
+      "src/subclass.ts:10 renderThroughBase [kind=12, fromRanges=1]",
+      "src/subclass.ts:4 render FancyWidget [kind=6, fromRanges=1]"
+    ],
+    "incomingJsxLeaf": [
+      "src/component.tsx:8 Tree [kind=12, fromRanges=1]"
+    ],
+    "outgoingInterfaceEntryPoint": [
+      "src/callers.ts:32 viaInterface",
+      "src/callers.ts:35 makeHandler"
+    ],
+    "referencesTARGET": [
+      "src/barrel.ts:3",
+      "src/barrel.ts:3",
+      "src/callers.ts:1",
+      "src/callers.ts:12",
+      "src/callers.ts:17",
+      "src/callers.ts:2",
+      "src/callers.ts:22",
+      "src/callers.ts:27",
+      "src/callers.ts:43",
+      "src/callers.ts:56",
+      "src/callers.ts:61",
+      "src/callers.ts:66",
+      "src/callers.ts:7",
+      "src/callers.ts:71",
+      "src/component.tsx:1",
+      "src/component.tsx:4",
+      "src/generated.ts:3",
+      "src/generated.ts:5",
+      "src/target.ts:20",
+      "src/target.ts:9",
+      "src/unused.ts:3",
+      "src/unused.ts:5"
+    ],
+    "referencesTARGETcount": 22
+  },
+  "tsgo": {
+    "prepareTARGET": [
+      {
+        "name": "TARGET",
+        "kind": 12,
+        "uri": "file:///Users/nalaka.manathunga/code/better-review/.scratch/code-review-client/research-01/fixtures/ts/src/target.ts",
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 0
+          },
+          "end": {
+            "line": 3,
+            "character": 1
+          }
+        },
+        "selectionRange": {
+          "start": {
+            "line": 1,
+            "character": 16
+          },
+          "end": {
+            "line": 1,
+            "character": 22
+          }
+        }
+      }
+    ],
+    "incomingTARGET": [
+      "src/callers.ts:1 /Users/nalaka.manathunga/code/better-review/.scratch/code-review-client/research-01/fixtures/ts/src/callers.ts [kind=2, fromRanges=1]",
+      "src/callers.ts:11 viaRenamedReExport [kind=12, fromRanges=1]",
+      "src/callers.ts:16 viaNamespaceBarrel [kind=12, fromRanges=1]",
+      "src/callers.ts:54 viaDynamicImport [kind=12, fromRanges=1]",
+      "src/callers.ts:6 directCall [kind=12, fromRanges=1]",
+      "src/callers.ts:61 inner [kind=12, fromRanges=1]",
+      "src/callers.ts:70 go objLit [kind=6, fromRanges=1]",
+      "src/component.tsx:3 Leaf [kind=12, fromRanges=1]",
+      "src/generated.ts:4 generatedCaller [kind=12, fromRanges=1]",
+      "src/target.ts:19 handle AlphaHandler [kind=6, fromRanges=1]",
+      "src/target.ts:8 render Widget [kind=6, fromRanges=1]",
+      "src/unused.ts:4 orphanCaller [kind=12, fromRanges=1]"
+    ],
+    "incomingTARGETms": 2.7221250534057617,
+    "incomingIfaceDecl": [
+      "src/callers.ts:32 viaInterface [kind=12, fromRanges=1]",
+      "src/callers.ts:77 directAlphaCall [kind=12, fromRanges=1]",
+      "src/callers.ts:80 directBetaCall [kind=12, fromRanges=1]"
+    ],
+    "incomingIfaceImpl": [
+      "src/callers.ts:32 viaInterface [kind=12, fromRanges=1]",
+      "src/callers.ts:77 directAlphaCall [kind=12, fromRanges=1]",
+      "src/callers.ts:80 directBetaCall [kind=12, fromRanges=1]"
+    ],
+    "implementationOfIfaceMethod": [
+      "src/target.ts:19",
+      "src/target.ts:25"
+    ],
+    "incomingBaseRender": [
+      "src/callers.ts:49 viaWidget [kind=12, fromRanges=1]",
+      "src/subclass.ts:10 renderThroughBase [kind=12, fromRanges=1]",
+      "src/subclass.ts:4 render FancyWidget [kind=6, fromRanges=1]"
+    ],
+    "incomingJsxLeaf": [
+      "src/component.tsx:8 Tree [kind=12, fromRanges=1]"
+    ],
+    "outgoingInterfaceEntryPoint": [
+      "src/callers.ts:32 viaInterface",
+      "src/callers.ts:35 makeHandler"
+    ],
+    "referencesTARGET": [
+      "src/barrel.ts:3",
+      "src/callers.ts:12",
+      "src/callers.ts:17",
+      "src/callers.ts:22",
+      "src/callers.ts:27",
+      "src/callers.ts:43",
+      "src/callers.ts:56",
+      "src/callers.ts:61",
+      "src/callers.ts:66",
+      "src/callers.ts:7",
+      "src/callers.ts:71",
+      "src/component.tsx:4",
+      "src/generated.ts:5",
+      "src/target.ts:20",
+      "src/target.ts:9",
+      "src/unused.ts:5"
+    ],
+    "referencesTARGETcount": 16
+  },
+  "vtsls": {
+    "prepareTARGET": [
+      {
+        "uri": "file:///Users/nalaka.manathunga/code/better-review/.scratch/code-review-client/research-01/fixtures/ts/src/target.ts",
+        "kind": 12,
+        "name": "TARGET",
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 0
+          },
+          "end": {
+            "line": 3,
+            "character": 1
+          }
+        },
+        "selectionRange": {
+          "start": {
+            "line": 1,
+            "character": 16
+          },
+          "end": {
+            "line": 1,
+            "character": 22
+          }
+        },
+        "detail": "",
+        "data": {
+          "id": 1
+        }
+      }
+    ],
+    "incomingTARGET": [
+      "src/callers.ts:1 callers.ts src [kind=2, fromRanges=1]",
+      "src/callers.ts:11 viaRenamedReExport [kind=12, fromRanges=1]",
+      "src/callers.ts:16 viaNamespaceBarrel [kind=12, fromRanges=1]",
+      "src/callers.ts:54 viaDynamicImport [kind=12, fromRanges=1]",
+      "src/callers.ts:6 directCall [kind=12, fromRanges=1]",
+      "src/callers.ts:61 inner [kind=12, fromRanges=1]",
+      "src/callers.ts:70 go objLit [kind=6, fromRanges=1]",
+      "src/component.tsx:3 Leaf [kind=12, fromRanges=1]",
+      "src/generated.ts:4 generatedCaller [kind=12, fromRanges=1]",
+      "src/target.ts:19 handle AlphaHandler [kind=6, fromRanges=1]",
+      "src/target.ts:8 render Widget [kind=6, fromRanges=1]",
+      "src/unused.ts:4 orphanCaller [kind=12, fromRanges=1]"
+    ],
+    "incomingTARGETms": 8.848791003227234,
+    "incomingIfaceDecl": [
+      "src/callers.ts:32 viaInterface [kind=12, fromRanges=1]",
+      "src/callers.ts:77 directAlphaCall [kind=12, fromRanges=1]",
+      "src/callers.ts:80 directBetaCall [kind=12, fromRanges=1]"
+    ],
+    "incomingIfaceImpl": [
+      "src/callers.ts:32 viaInterface [kind=12, fromRanges=1]",
+      "src/callers.ts:77 directAlphaCall [kind=12, fromRanges=1]",
+      "src/callers.ts:80 directBetaCall [kind=12, fromRanges=1]"
+    ],
+    "implementationOfIfaceMethod": [
+      "src/target.ts:19",
+      "src/target.ts:25"
+    ],
+    "incomingBaseRender": [
+      "src/callers.ts:49 viaWidget [kind=12, fromRanges=1]",
+      "src/subclass.ts:10 renderThroughBase [kind=12, fromRanges=1]",
+      "src/subclass.ts:4 render FancyWidget [kind=6, fromRanges=1]"
+    ],
+    "incomingJsxLeaf": [
+      "src/component.tsx:8 Tree [kind=12, fromRanges=1]"
+    ],
+    "outgoingInterfaceEntryPoint": [
+      "src/callers.ts:32 viaInterface",
+      "src/callers.ts:35 makeHandler"
+    ],
+    "referencesTARGET": [
+      "src/barrel.ts:3",
+      "src/barrel.ts:3",
+      "src/callers.ts:1",
+      "src/callers.ts:12",
+      "src/callers.ts:17",
+      "src/callers.ts:2",
+      "src/callers.ts:22",
+      "src/callers.ts:27",
+      "src/callers.ts:43",
+      "src/callers.ts:56",
+      "src/callers.ts:61",
+      "src/callers.ts:66",
+      "src/callers.ts:7",
+      "src/callers.ts:71",
+      "src/component.tsx:1",
+      "src/component.tsx:4",
+      "src/generated.ts:3",
+      "src/generated.ts:5",
+      "src/target.ts:20",
+      "src/target.ts:9",
+      "src/unused.ts:3",
+      "src/unused.ts:5"
+    ],
+    "referencesTARGETcount": 22
+  },
+  "gopls": {
+    "prepareTARGET": [
+      {
+        "name": "TARGET",
+        "kind": 12,
+        "detail": "fixture/target • target.go",
+        "uri": "file:///Users/nalaka.manathunga/code/better-review/.scratch/code-review-client/research-01/fixtures/go/target/target.go",
+        "range": {
+          "start": {
+            "line": 3,
+            "character": 5
+          },
+          "end": {
+            "line": 3,
+            "character": 11
+          }
+        },
+        "selectionRange": {
+          "start": {
+            "line": 3,
+            "character": 5
+          },
+          "end": {
+            "line": 3,
+            "character": 11
+          }
+        }
+      }
+    ],
+    "incomingTARGET": [
+      "callers/callers.go:23 AsFuncValue fixture/target • callers.go [kind=12, fromRanges=1]",
+      "callers/callers.go:28 ViaLocalAlias fixture/target • callers.go [kind=12, fromRanges=1]",
+      "callers/callers.go:34 ViaGoroutine fixture/target • callers.go [kind=12, fromRanges=1]",
+      "callers/callers.go:39 ViaDefer fixture/target • callers.go [kind=12, fromRanges=1]",
+      "callers/callers.go:50 init fixture/target • callers.go [kind=13, fromRanges=1]",
+      "callers/callers.go:55 Generic fixture/target • callers.go [kind=12, fromRanges=1]",
+      "callers/callers.go:60 init fixture/target • callers.go [kind=13, fromRanges=1]",
+      "callers/callers.go:63 ViaClosure fixture/target • callers.go [kind=12, fromRanges=1]",
+      "callers/callers.go:71 Handle fixture/target • callers.go [kind=12, fromRanges=1]",
+      "callers/callers.go:8 DirectCall fixture/target • callers.go [kind=12, fromRanges=1]",
+      "gen/gen.pb.go:7 GeneratedCaller fixture/target • gen.pb.go [kind=12, fromRanges=1]",
+      "orphan/orphan.go:6 OrphanCaller fixture/target • orphan.go [kind=12, fromRanges=1]",
+      "target/target.go:16 Handle fixture/target • target.go [kind=12, fromRanges=1]",
+      "target/target.go:26 Method fixture/target • target.go [kind=12, fromRanges=1]"
+    ],
+    "incomingTARGETms": 1.1075410842895508,
+    "incomingIfaceDecl": [
+      "callers/callers.go:11 ViaInterface fixture/target • callers.go [kind=12, fromRanges=1]",
+      "callers/callers.go:76 DirectAlphaCall fixture/target • callers.go [kind=12, fromRanges=1]",
+      "callers/callers.go:77 DirectBetaCall fixture/target • callers.go [kind=12, fromRanges=1]"
+    ],
+    "incomingIfaceImpl": [
+      "callers/callers.go:11 ViaInterface fixture/target • callers.go [kind=12, fromRanges=1]",
+      "callers/callers.go:76 DirectAlphaCall fixture/target • callers.go [kind=12, fromRanges=1]"
+    ],
+    "implementationOfIfaceMethod": [
+      "callers/callers.go:71",
+      "target/target.go:16",
+      "target/target.go:21"
+    ],
+    "incomingPromotedMethod": [
+      "callers/callers.go:44 ViaEmbedded fixture/target • callers.go [kind=12, fromRanges=1]"
+    ],
+    "outgoingInterfaceEntryPoint": [
+      "callers/callers.go:11 ViaInterface",
+      "callers/callers.go:13 MakeHandler"
+    ],
+    "referencesTARGET": [
+      "callers/callers.go:24",
+      "callers/callers.go:29",
+      "callers/callers.go:35",
+      "callers/callers.go:40",
+      "callers/callers.go:50",
+      "callers/callers.go:55",
+      "callers/callers.go:60",
+      "callers/callers.go:64",
+      "callers/callers.go:71",
+      "callers/callers.go:8",
+      "gen/gen.pb.go:7",
+      "orphan/orphan.go:6",
+      "target/target.go:16",
+      "target/target.go:26"
+    ],
+    "referencesTARGETcount": 14
+  }
+}

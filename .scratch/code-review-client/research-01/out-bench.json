@@ -1,0 +1,218 @@
+[
+  {
+    "label": "tls+ts5.9 @ iam-mono ROOT",
+    "root": "/Users/nalaka.manathunga/code/iam-mono",
+    "initializeMs": 1965,
+    "rssAfterInitMB": 247.2,
+    "didOpenMs": 12,
+    "coldDefinition": {
+      "msFromInitialize": 24320,
+      "msFromSpawn": 29970,
+      "pollAttempts": 103,
+      "timedOut": false,
+      "answer": [
+        "node_modules/.pnpm/kysely@0.29.2/node_modules/kysely/dist/kysely.d.ts:207"
+      ]
+    },
+    "rssAfterFirstDefMB": 689.1,
+    "coldIncomingCalls": {
+      "msFromSpawn": 33578,
+      "pollAttempts": 1,
+      "timedOut": false,
+      "n": 9,
+      "callers": [
+        "insertRole",
+        "updateRole",
+        "createAssignment",
+        "deleteAssignment",
+        "updateAssignmentScope",
+        "createRole",
+        "updateRole",
+        "deleteRole"
+      ]
+    },
+    "rssAfterCallHierarchyMB": 614.9,
+    "warmDefinitionMs": "n=20 min=2 p50=7 p95=22 max=22",
+    "warmPrepare_plus_IncomingCallsMs": "n=20 min=54 p50=79 p95=274 max=274",
+    "firstQueryInNewlyOpenedFileMs": "n=1 min=20 p50=20 p95=20 max=20",
+    "newlyOpenedFilesWithEmptyAnswer": [],
+    "rssFinalMB": 591,
+    "procTree": [
+      {
+        "pid": 60931,
+        "rssMB": 53.7,
+        "comm": "/Users/nalaka.manathunga/.nvm/versions/node/v24.11.1/bin/node"
+      },
+      {
+        "pid": 60989,
+        "rssMB": 75.1,
+        "comm": "/Users/nalaka.manathunga/.nvm/versions/node/v24.11.1/bin/node"
+      },
+      {
+        "pid": 60993,
+        "rssMB": 400.7,
+        "comm": "/Users/nalaka.manathunga/.nvm/versions/node/v24.11.1/bin/node"
+      },
+      {
+        "pid": 61114,
+        "rssMB": 40,
+        "comm": "/Users/nalaka.manathunga/.nvm/versions/node/v24.11.1/bin/node"
+      }
+    ]
+  },
+  {
+    "label": "tls+ts5.9 @ services/iam-api (package root)",
+    "root": "/Users/nalaka.manathunga/code/iam-mono/services/iam-api",
+    "initializeMs": 3314,
+    "rssAfterInitMB": 268.5,
+    "didOpenMs": 2,
+    "coldDefinition": {
+      "msFromInitialize": 17639,
+      "msFromSpawn": 25439,
+      "pollAttempts": 78,
+      "timedOut": false,
+      "answer": [
+        "/Users/nalaka.manathunga/code/iam-mono/node_modules/.pnpm/kysely@0.29.2/node_modules/kysely/dist/kysely.d.ts:207"
+      ]
+    },
+    "rssAfterFirstDefMB": 163.5,
+    "coldIncomingCalls": {
+      "msFromSpawn": 47658,
+      "pollAttempts": 1,
+      "timedOut": false,
+      "n": 9,
+      "callers": [
+        "insertRole",
+        "updateRole",
+        "createAssignment",
+        "deleteAssignment",
+        "updateAssignmentScope",
+        "createRole",
+        "updateRole",
+        "deleteRole"
+      ]
+    },
+    "rssAfterCallHierarchyMB": 266.8,
+    "warmDefinitionMs": "n=20 min=2 p50=5 p95=560 max=560",
+    "warmPrepare_plus_IncomingCallsMs": "n=20 min=66 p50=106 p95=548 max=548",
+    "firstQueryInNewlyOpenedFileMs": "n=1 min=14 p50=14 p95=14 max=14",
+    "newlyOpenedFilesWithEmptyAnswer": [],
+    "rssFinalMB": 473.9,
+    "procTree": [
+      {
+        "pid": 62362,
+        "rssMB": 52.7,
+        "comm": "/Users/nalaka.manathunga/.nvm/versions/node/v24.11.1/bin/node"
+      },
+      {
+        "pid": 62451,
+        "rssMB": 75.4,
+        "comm": "/Users/nalaka.manathunga/.nvm/versions/node/v24.11.1/bin/node"
+      },
+      {
+        "pid": 62453,
+        "rssMB": 305.8,
+        "comm": "/Users/nalaka.manathunga/.nvm/versions/node/v24.11.1/bin/node"
+      },
+      {
+        "pid": 62515,
+        "rssMB": 39.9,
+        "comm": "/Users/nalaka.manathunga/.nvm/versions/node/v24.11.1/bin/node"
+      }
+    ]
+  },
+  {
+    "label": "tsgo 7.0.2 @ iam-mono ROOT",
+    "root": "/Users/nalaka.manathunga/code/iam-mono",
+    "initializeMs": 368,
+    "rssAfterInitMB": 19.6,
+    "didOpenMs": 2,
+    "coldDefinition": {
+      "msFromInitialize": 1077,
+      "msFromSpawn": 2164,
+      "pollAttempts": 1,
+      "timedOut": false,
+      "answer": [
+        "node_modules/.pnpm/kysely@0.29.2/node_modules/kysely/dist/kysely.d.ts:207"
+      ]
+    },
+    "rssAfterFirstDefMB": 206.8,
+    "coldIncomingCalls": {
+      "msFromSpawn": 2549,
+      "pollAttempts": 1,
+      "timedOut": false,
+      "n": 9,
+      "callers": [
+        "createAssignment",
+        "deleteAssignment",
+        "updateAssignmentScope",
+        "insertRole",
+        "updateRole",
+        "createRole",
+        "updateRole",
+        "deleteRole"
+      ]
+    },
+    "rssAfterCallHierarchyMB": 208,
+    "warmDefinitionMs": "n=20 min=1 p50=5 p95=31 max=31",
+    "warmPrepare_plus_IncomingCallsMs": "n=20 min=25 p50=56 p95=103 max=103",
+    "firstQueryInNewlyOpenedFileMs": "n=1 min=2 p50=2 p95=2 max=2",
+    "newlyOpenedFilesWithEmptyAnswer": [],
+    "rssFinalMB": 243.9,
+    "procTree": [
+      {
+        "pid": 63222,
+        "rssMB": 243.9,
+        "comm": "/Users/nalaka.manathunga/code/better-review/.scratch/code-review-client/research-01/node_modules/@typescript/typescript-darwin-arm64/lib/tsc"
+      }
+    ]
+  },
+  {
+    "label": "gopls 0.23 @ auth",
+    "root": "/Users/nalaka.manathunga/code/auth",
+    "initializeMs": 782,
+    "rssAfterInitMB": 56.2,
+    "didOpenMs": 1,
+    "coldDefinition": {
+      "msFromInitialize": 6015,
+      "msFromSpawn": 7111,
+      "pollAttempts": 1,
+      "timedOut": false,
+      "answer": [
+        "service/identity.go:190"
+      ]
+    },
+    "rssAfterFirstDefMB": 541,
+    "coldIncomingCalls": {
+      "msFromSpawn": 7914,
+      "pollAttempts": 1,
+      "timedOut": false,
+      "n": 3,
+      "callers": [
+        "CreateIdentityIntercomJWT",
+        "TestAddAttributesIfPresent",
+        "TestAddAttributesIfPresent_MultipleAttributes"
+      ]
+    },
+    "rssAfterCallHierarchyMB": 546.4,
+    "warmDefinitionMs": "n=20 min=1 p50=4 p95=74 max=74",
+    "warmPrepare_plus_IncomingCallsMs": "n=20 min=2 p50=8 p95=181 max=181",
+    "firstQueryInNewlyOpenedFileMs": "n=1 min=72 p50=72 p95=72 max=72",
+    "newlyOpenedFilesWithEmptyAnswer": [
+      "generated/handler/handlers.go"
+    ],
+    "rssFinalMB": 675.7,
+    "procTree": [
+      {
+        "pid": 63616,
+        "rssMB": 663.1,
+        "comm": "/Users/nalaka.manathunga/go/bin/gopls"
+      },
+      {
+        "pid": 63650,
+        "rssMB": 14.5,
+        "comm": "/Users/nalaka.manathunga/go/bin/gopls"
+      }
+    ]
+  }
+]
