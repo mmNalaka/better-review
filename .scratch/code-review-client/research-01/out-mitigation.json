@@ -1,0 +1,175 @@
+{
+  "fixture": {
+    "callHierarchyEdges": 12,
+    "callHierarchyMs": 40,
+    "referenceEdges": 15,
+    "referencesMs": 3,
+    "attributionMs": 26,
+    "documentSymbolRequests": 5,
+    "recoveredByReferencesOnly": [
+      {
+        "loc": "src/callers.ts:22",
+        "enclosing": "asCallback",
+        "kind": 12,
+        "line": "return xs.map(TARGET);"
+      },
+      {
+        "loc": "src/callers.ts:27",
+        "enclosing": "f",
+        "kind": 13,
+        "line": "const f = TARGET;"
+      },
+      {
+        "loc": "src/callers.ts:43",
+        "enclosing": "table",
+        "kind": 13,
+        "line": "const table: Record<string, (n: number) => number> = { t: TARGET };"
+      }
+    ],
+    "missedByReferencesButFoundByCH": []
+  },
+  "iamMono": {
+    "symbol": "withTransaction",
+    "callHierarchyEdges": 9,
+    "callHierarchyMs": 624,
+    "rawReferences": 31,
+    "referenceEdgesAfterFilter": 31,
+    "referencesMs": 237,
+    "attributionMs": 275,
+    "documentSymbolRequests": 5,
+    "extraEdgesFoundOnlyByReferences": [
+      {
+        "loc": "services/iam-api/src/modules/role-assignments/role-assignments.service.test.ts:86",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/role-assignments/role-assignments.service.test.ts:249",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/role-assignments/role-assignments.service.test.ts:324",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/role-assignments/role-assignments.service.test.ts:553",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/role-assignments/role-assignments.service.test.ts:1105",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/role-assignments/role-assignments.service.test.ts:1390",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:66",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:154",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:269",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:350",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:396",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:427",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:466",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:489",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:659",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:704",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:755",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:805",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:845",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:888",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:935",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      },
+      {
+        "loc": "services/iam-api/src/modules/roles/roles.service.test.ts:1081",
+        "enclosing": "withTransaction",
+        "kind": 13,
+        "line": "const { withTransaction } = await import(\"../../db/transaction.js\");"
+      }
+    ]
+  }
+}

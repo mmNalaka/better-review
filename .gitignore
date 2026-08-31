@@ -1,0 +1,12 @@
+node_modules
+dist
+.DS_Store
+*.log
+
+# Research scratch: bulky throwaway working material (repo copies, LSP caches,
+# fixtures). The findings themselves live in the ticket files, which are tracked.
+.scratch/**/research-*/node_modules/
+.scratch/**/research-*/degrade/
+.scratch/**/research-*/discarded-cache/
+.scratch/**/research-*/ts5/
+.scratch/**/research-*/fixtures/
