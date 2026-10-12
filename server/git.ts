@@ -17,7 +17,7 @@ export async function git(cwd: string, ...args: string[]): Promise<string> {
   return gitWith(cwd, {}, ...args);
 }
 
-/** As `git`, with extra environment — see the HTTPS fallback in fetchPrHead. */
+/** As `git`, with extra environment — see the HTTPS fallback in fetchPrRefs. */
 export async function gitWith(
   cwd: string,
   env: Record<string, string>,
@@ -89,9 +89,22 @@ export async function findClone(owner: string, repo: string): Promise<string | n
  */
 const GH_CREDENTIALS = "credential.helper=!gh auth git-credential";
 
+export interface PrRefs {
+  readonly headSha: string;
+  /** Tip of the base branch as GitHub has it now, not as the clone last saw it. */
+  readonly baseSha: string;
+}
+
 /**
- * Fetches the PR head into a private ref. Works for forks, merged PRs and
- * deleted head branches, because `refs/pull/N/head` lives in the base repo.
+ * Fetches the PR head and the current tip of its base branch into private
+ * refs. Works for forks, merged PRs and deleted head branches, because
+ * `refs/pull/N/head` lives in the base repo.
+ *
+ * The base branch is fetched too because the clone's `origin/<base>` is only
+ * as fresh as the user's last `git fetch`. A stale base gives a merge-base
+ * that is too old, and the diff then shows commits that have long since
+ * landed on the base branch as if the PR made them. Both refs go in one
+ * fetch so they come from the same moment and the same credentials.
  *
  * `origin` first, then HTTPS with `gh`'s credentials. On a work machine the
  * ssh key in the agent is often a personal one, which cannot see a private org
@@ -99,16 +112,18 @@ const GH_CREDENTIALS = "credential.helper=!gh auth git-credential";
  * this app already trusts for PR metadata, is logged in as the account that
  * can. One auth source beats two, and the second one being invisible.
  */
-export async function fetchPrHead(
+export async function fetchPrRefs(
   dir: string,
   owner: string,
   repo: string,
   number: number,
-): Promise<string> {
-  const ref = `${PR_REF_NAMESPACE}/${number}/head`;
-  const spec = `+refs/pull/${number}/head:${ref}`;
+  baseRef: string,
+): Promise<PrRefs> {
+  const headRef = `${PR_REF_NAMESPACE}/${number}/head`;
+  const baseTip = `${PR_REF_NAMESPACE}/${number}/base`;
+  const specs = [`+refs/pull/${number}/head:${headRef}`, `+refs/heads/${baseRef}:${baseTip}`];
   try {
-    await git(dir, "fetch", "--no-tags", "--no-write-fetch-head", "origin", spec);
+    await git(dir, "fetch", "--no-tags", "--no-write-fetch-head", "origin", ...specs);
   } catch (viaOrigin) {
     try {
       await gitWith(
@@ -125,7 +140,7 @@ export async function fetchPrHead(
         "--no-tags",
         "--no-write-fetch-head",
         `https://github.com/${owner}/${repo}.git`,
-        spec,
+        ...specs,
       );
     } catch (viaHttps) {
       // Both messages, because they fail for different reasons and only the
@@ -137,12 +152,15 @@ export async function fetchPrHead(
       );
     }
   }
-  return (await git(dir, "rev-parse", ref)).trim();
+  const [headSha, baseSha] = await Promise.all([
+    git(dir, "rev-parse", headRef),
+    git(dir, "rev-parse", baseTip),
+  ]);
+  return { headSha: headSha.trim(), baseSha: baseSha.trim() };
 }
 
-export async function mergeBase(dir: string, baseRef: string, headSha: string): Promise<string> {
-  const base = await git(dir, "rev-parse", `origin/${baseRef}`).catch(() => git(dir, "rev-parse", baseRef));
-  return (await git(dir, "merge-base", base.trim(), headSha)).trim();
+export async function mergeBase(dir: string, baseSha: string, headSha: string): Promise<string> {
+  return (await git(dir, "merge-base", baseSha, headSha)).trim();
 }
 
 function toChangeKind(raw: string): ChangeKind {

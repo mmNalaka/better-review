@@ -1,3 +1,4 @@
+import { buildConversation, type ConversationEntry, type RawIssueComment, type RawReview } from "./conversation";
 import { toThreadInput, type ReviewSubmission } from "./publish";
 import type { PullRequest } from "./types";
 
@@ -10,6 +11,7 @@ export class GitHubError extends Error {
 
 interface PrApiResponse {
   readonly title?: string;
+  readonly body?: string | null;
   readonly draft?: boolean;
   readonly state?: string;
   readonly head?: {
@@ -72,6 +74,7 @@ export async function fetchPullRequest(
     repo,
     number,
     title: parsed.title ?? "",
+    body: parsed.body ?? "",
     headSha,
     baseRef,
     headRef: parsed.head?.ref ?? "",
@@ -243,4 +246,36 @@ export async function postReview(
   });
 
   return { url: submitted.submitPullRequestReview.pullRequestReview.url, posted, failures };
+}
+
+async function ghApiList<T>(path: string): Promise<readonly T[]> {
+  // `--paginate`: a busy pull request's comments or reviews can span pages,
+  // and `gh` concatenates a JSON array response across them on its own.
+  const proc = Bun.spawn(["gh", "api", path, "--paginate"], { stdout: "pipe", stderr: "pipe" });
+  const [stdout, stderr, code] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ]);
+
+  if (code !== 0) throw new GitHubError(`gh api failed: ${stderr.trim() || "no stderr"}`);
+
+  try {
+    return JSON.parse(stdout) as readonly T[];
+  } catch {
+    throw new GitHubError("gh api returned output that was not JSON");
+  }
+}
+
+/** The description and conversation GitHub already holds — shaping lives in `conversation.ts`. */
+export async function fetchPrConversation(
+  owner: string,
+  repo: string,
+  number: number,
+): Promise<readonly ConversationEntry[]> {
+  const [comments, reviews] = await Promise.all([
+    ghApiList<RawIssueComment>(`repos/${owner}/${repo}/issues/${number}/comments`),
+    ghApiList<RawReview>(`repos/${owner}/${repo}/pulls/${number}/reviews`),
+  ]);
+  return buildConversation(comments, reviews);
 }

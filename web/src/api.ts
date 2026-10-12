@@ -2,8 +2,12 @@ import type { ReviewPayload } from "../../server/types";
 
 export type { ChangedFile, Commit, PullRequest, ReviewPayload } from "../../server/types";
 import type { ChangedFile } from "../../server/types";
+export type { ConversationEntry } from "../../server/conversation";
+import type { ConversationEntry } from "../../server/conversation";
 export type { DiffLine, FileDiff, Hunk, HunkIndex, HunkRef } from "../../server/diff";
 export type { HunkMark, MarkFile } from "../../server/markmodel";
+export type { CompareRow, CompareSide, Comparison, FileRevision } from "../../server/history";
+import type { Comparison, FileRevision } from "../../server/history";
 export type { PublishPlan, ReviewEvent, ReviewSubmission } from "../../server/publish";
 import type { PublishPlan, ReviewEvent, ReviewSubmission } from "../../server/publish";
 import type { HunkIndex } from "../../server/diff";
@@ -66,6 +70,13 @@ async function sendJson<T>(
 
 export const loadReview = (pr: string): Promise<ReviewPayload> => getJson("/api/review", { pr });
 
+/** The pull request's description and conversation — GitHub's own comments and review summaries. */
+export const loadConversation = (
+  owner: string,
+  repo: string,
+  pr: number,
+): Promise<readonly ConversationEntry[]> => getJson("/api/conversation", { owner, repo, pr });
+
 /** Every hunk in the PR, ids only — what the explorer derives its state from. */
 export const loadHunks = (
   owner: string,
@@ -100,6 +111,28 @@ export const loadDiff = (
   commit?: string | null,
 ): Promise<import("../../server/diff").FileDiff> =>
   getJson("/api/diff", { owner, repo, pr, rev, path, ...(commit ? { commit } : {}) });
+
+/** Every commit that touched a file, newest first, following renames. */
+export const loadHistory = (
+  owner: string,
+  repo: string,
+  pr: number,
+  rev: string,
+  path: string,
+): Promise<{ revisions: readonly FileRevision[] }> =>
+  getJson("/api/history", { owner, repo, pr, rev, path });
+
+/** A past version of a file beside the PR head, as aligned rows. */
+export const loadComparison = (
+  owner: string,
+  repo: string,
+  pr: number,
+  rev: string,
+  path: string,
+  from: string,
+  fromPath: string,
+): Promise<Comparison> =>
+  getJson("/api/compare", { owner, repo, pr, rev, path, from, fromPath });
 
 /** Files changed by one commit, for reviewing commit by commit. */
 export const loadCommitFiles = (

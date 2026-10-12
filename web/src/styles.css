@@ -303,6 +303,8 @@ body {
 
 .sym { cursor: pointer; border-radius: 2px; }
 .sym:hover { background: var(--accent-soft); box-shadow: 0 1px 0 var(--accent); }
+/* Every occurrence of the word picked by double-click or drag-select. */
+.sym.hit { background: color-mix(in srgb, var(--accent) 30%, transparent); box-shadow: 0 0 0 1px var(--accent); }
 
 .code.busy { opacity: .6; }
 .ln.focus { background: var(--accent-soft); }
@@ -492,6 +494,92 @@ body {
   white-space: pre-wrap; color: var(--muted); overflow-x: auto;
 }
 
+/* ── overview: description + conversation ────────────────────── */
+
+.overview {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 92vw); z-index: 40;
+  background: var(--surface); border-left: 1px solid var(--line);
+  box-shadow: var(--shadow, 0 8px 30px rgba(0,0,0,.25)); overflow-y: auto;
+}
+
+.overview-body { padding-bottom: 20px; }
+
+.overview-desc, .overview-thread { padding: 12px 14px; border-bottom: 1px solid var(--line-soft); }
+.overview-thread { border-bottom: 0; }
+
+.overview-entry { padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.overview-entry:first-of-type { border-top: 0; }
+
+.overview-entry-meta {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 11px; color: var(--faint);
+}
+
+.overview-avatar { border-radius: 50%; display: block; }
+.overview-author { color: var(--ink); font-weight: 600; }
+.overview-date { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.overview-link {
+  margin-left: auto; color: var(--accent); text-decoration: none; font-size: 10.5px;
+}
+.overview-link:hover { text-decoration: underline; }
+
+/* ── rendered markdown: PR description + conversation bodies ────── */
+
+.markdown-box {
+  margin: 8px 0 0; padding: 9px 11px; background: var(--surface-2);
+  border-radius: 4px; overflow-x: auto;
+}
+
+.markdown { font-size: 11.5px; line-height: 1.6; color: var(--muted); }
+.markdown > :first-child { margin-top: 0; }
+.markdown > :last-child { margin-bottom: 0; }
+
+.markdown h1, .markdown h2, .markdown h3, .markdown h4, .markdown h5, .markdown h6 {
+  color: var(--ink); font-weight: 650; line-height: 1.3; margin: 14px 0 6px;
+}
+.markdown h1 { font-size: 15px; }
+.markdown h2 { font-size: 13.5px; }
+.markdown h3, .markdown h4, .markdown h5, .markdown h6 { font-size: 12.5px; }
+
+.markdown p { margin: 0 0 8px; }
+.markdown ul, .markdown ol { margin: 0 0 8px; padding-left: 20px; }
+.markdown li { margin: 2px 0; }
+.markdown li > p { margin: 0; }
+.markdown li input[type="checkbox"] { margin-right: 5px; }
+
+.markdown a { color: var(--accent); }
+.markdown a:hover { text-decoration: underline; }
+
+.markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px;
+  background: var(--surface-3); padding: 1px 4px; border-radius: 3px;
+}
+.markdown pre {
+  background: var(--surface-3); padding: 8px 10px; border-radius: 4px;
+  overflow-x: auto; margin: 0 0 8px;
+}
+.markdown pre code { background: none; padding: 0; }
+
+.markdown blockquote {
+  margin: 0 0 8px; padding: 1px 10px; border-left: 2px solid var(--line);
+  color: var(--faint);
+}
+
+.markdown table { border-collapse: collapse; margin: 0 0 8px; font-size: 11px; }
+.markdown th, .markdown td { border: 1px solid var(--line-soft); padding: 4px 7px; text-align: left; }
+.markdown th { background: var(--surface-3); color: var(--ink); }
+
+.markdown hr { border: 0; border-top: 1px solid var(--line-soft); margin: 12px 0; }
+.markdown img { max-width: 100%; border-radius: 4px; }
+.markdown del { color: var(--faint); }
+
+.markdown details {
+  margin: 0 0 8px; border: 1px solid var(--line-soft); border-radius: 4px; padding: 6px 9px;
+}
+.markdown summary { cursor: pointer; color: var(--ink); font-weight: 600; }
+.markdown details[open] summary { margin-bottom: 6px; }
+
 /* ── ring markers (tickets 09 + 10) ──────────────────────────── */
 
 .ringmark {
@@ -622,6 +710,11 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
 }
 
 .badge.draft { background: var(--surface-3); color: var(--flag); }
+
+.badge.state-approved { background: var(--accent-soft); color: var(--accent); }
+.badge.state-changes-requested { background: var(--surface-3); color: var(--del); }
+.badge.state-commented { background: var(--surface-3); color: var(--muted); }
+.badge.state-dismissed { background: var(--surface-3); color: var(--faint); }
 
 /* ── reviewing one commit (ticket 05 revision) ───────────────── */
 
@@ -1127,3 +1220,49 @@ body.picking-lines .dl-text { pointer-events: none; }
 }
 
 .help-note { margin-top: 10px !important; font-size: 11px !important; color: var(--faint) !important; }
+
+/* ── file history + side-by-side compare ───────────────────── */
+
+.history-path {
+  margin: 0; padding: 8px 14px; border-bottom: 1px solid var(--line-soft);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: var(--muted);
+  word-break: break-all;
+}
+.history-renamed {
+  margin-top: 3px; font-size: 11px; color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.commit-pick:disabled { opacity: .55; cursor: default; }
+.commit-pick:disabled:hover { border-color: var(--line); color: inherit; }
+
+.panes.mode-compare { grid-template-columns: var(--explorer-w) 5px 1fr; }
+
+.comparepane { overflow: auto; background: var(--surface-2); min-width: 0; }
+
+.cmp-head { display: grid; grid-template-columns: 1fr 1fr auto; align-items: center; gap: 12px; }
+.cmp-side { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.cmp-subject {
+  font-size: 11.5px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.cmp-close { margin-left: 0; }
+
+.cmp-grid {
+  padding: 6px 0 60px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.55;
+}
+/* Two columns of [number, text]; long lines wrap so the rows stay aligned. */
+.cmp-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px minmax(0, 1fr); }
+.cmp-row:hover { background: var(--surface-3); }
+.cmp-num {
+  text-align: right; padding-right: 10px; color: var(--faint);
+  font-variant-numeric: tabular-nums; user-select: none;
+}
+.cmp-num:nth-child(3) { border-left: 1px solid var(--line); }
+.cmp-text { white-space: pre-wrap; overflow-wrap: anywhere; padding-right: 12px; }
+.cmp-text.removed { background: color-mix(in srgb, var(--del) 15%, transparent); }
+.cmp-text.added   { background: color-mix(in srgb, var(--add) 15%, transparent); }
+.cmp-text.blank {
+  background: repeating-linear-gradient(-45deg, transparent 0 4px, var(--line-soft) 4px 5px);
+}
+.cmp-change { scroll-margin-top: 48px; }
