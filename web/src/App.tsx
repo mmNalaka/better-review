@@ -33,6 +33,7 @@ import { CodePane } from "./CodePane";
 import { Explorer } from "./Explorer";
 import { findings, setFileReviewed, setLineNote, toggleHunk } from "./marks";
 import { useMarks } from "./useMarks";
+import { StartPage } from "./StartPage";
 import { Trail } from "./Trail";
 import {
   NO_WALK,
@@ -45,8 +46,6 @@ import {
   type Hop,
   type Walk,
 } from "./hops";
-
-const DEFAULT_PR = "acme/auth#146";
 
 const readParams = () => new URLSearchParams(location.search);
 
@@ -70,7 +69,7 @@ function writeParams(pr: string, walk: Walk, how: "push" | "replace") {
 }
 
 export function App() {
-  const [ref, setRef] = useState(() => readParams().get("pr") ?? DEFAULT_PR);
+  const [ref, setRef] = useState(() => readParams().get("pr") ?? "");
   const [review, setReview] = useState<ReviewPayload | null>(null);
   const [walk, setWalk] = useState<Walk>(NO_WALK);
   const [body, setBody] = useState<{ path: string; text: string } | null>(null);
@@ -175,10 +174,21 @@ export function App() {
     }
   }, []);
 
-  // Restore whatever the URL described, once.
+  /** Back to the start page: no pull request named, nothing open. */
+  const close = useCallback(() => {
+    setError(null);
+    setNotice(null);
+    setReview(null);
+    setWalk(NO_WALK);
+    setBody(null);
+    setRef("");
+  }, []);
+
+  // Restore whatever the URL described, once. No `pr` means the start page.
   useEffect(() => {
     const params = readParams();
-    void open(params.get("pr") ?? DEFAULT_PR, params.get("trail"), params.get("at"));
+    const pr = params.get("pr");
+    if (pr) void open(pr, params.get("trail"), params.get("at"));
   }, [open]);
 
   // Load the file the current hop points at.
@@ -247,7 +257,11 @@ export function App() {
   useEffect(() => {
     const onPop = () => {
       const params = readParams();
-      const pr = params.get("pr") ?? DEFAULT_PR;
+      const pr = params.get("pr");
+      if (!pr) {
+        close();
+        return;
+      }
       if (!review || pr !== refOf(review.pr)) {
         void open(pr, params.get("trail"), params.get("at"));
         return;
@@ -257,7 +271,7 @@ export function App() {
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [review, changedPaths, open]);
+  }, [review, changedPaths, open, close]);
 
   const ringOf = useCallback(
     (path: string): Hop["ring"] => (changedPaths.has(path) ? "changed" : "unknown"),
@@ -383,7 +397,7 @@ export function App() {
           className="prform"
           onSubmit={(event) => {
             event.preventDefault();
-            void open(ref, null, null);
+            if (ref.trim()) void open(ref.trim(), null, null);
           }}
         >
           <input
@@ -556,6 +570,11 @@ export function App() {
         />
       )}
 
+      {!review && !busy && (
+        <StartPage busy={busy} onOpen={(prRef) => void open(prRef, null, null)} />
+      )}
+
+      {(review || busy) && (
       <div
         className={`panes mode-${compareWith ? "compare" : isChanged ? mode : "file"}`}
         style={{ "--explorer-w": `${explorer.width}px` } as CSSProperties}
@@ -583,7 +602,7 @@ export function App() {
           />
         ) : (
           <nav className="explorer">
-            <p className="pane-empty">Open a pull request to begin.</p>
+            <p className="pane-empty">Opening the pull request…</p>
           </nav>
         )}
         <div
@@ -652,6 +671,7 @@ export function App() {
         />
         )}
       </div>
+      )}
     </div>
   );
 }
