@@ -1402,3 +1402,17 @@ body.picking-lines .dl-text { pointer-events: none; }
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink);
 }
+
+/* Clone roots: shown on the start page and in help. */
+.clone-roots p { margin: 0 0 8px; }
+.clone-roots code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--ink); }
+
+.clone-roots-cmd {
+  margin: 0 0 8px; padding: 6px 10px; overflow-x: auto; border-radius: 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+  color: var(--ink); background: var(--surface-2); border: 1px solid var(--line-soft);
+}
+
+.start-sub { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.start-foot p { margin: 0 0 8px; }
+.start-foot p:last-child { margin-bottom: 0; }

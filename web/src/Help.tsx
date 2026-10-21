@@ -1,3 +1,4 @@
+import { CloneRoots } from "./CloneRoots";
 import { GROUPS, SHORTCUTS } from "./shortcuts";
 
 /**
@@ -23,6 +24,11 @@ export function Help({ onClose }: HelpProps) {
       </header>
 
       <div className="help-body">
+        <section className="help-part">
+          <h3>Where your clones are found</h3>
+          <CloneRoots />
+        </section>
+
         <section className="help-part">
           <h3>Reading</h3>
           <p>
