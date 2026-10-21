@@ -168,6 +168,16 @@ function bindingHead(text: string): string {
   return assign === -1 ? text : text.slice(0, assign + 1) + arrowHead(text.slice(assign + 1));
 }
 
+/**
+ * Visibility decides who may import a function, not how it is called — so
+ * exporting one leaves every caller as it was. `async` is kept: that does
+ * change what a caller gets back.
+ */
+const VISIBILITY = /(^|\s)(?:export(?:\s+default)?|declare|pub(?:\([^)]*\))?)\s+/g;
+
+/** The header as a caller sees it. */
+export const callShape = (header: string): string => header.replace(VISIBILITY, "$1").trim();
+
 export interface SignatureChange {
   readonly name: string;
   /** 0-based position of the name — what call hierarchy is asked about. */
@@ -219,7 +229,7 @@ export function signatureChanges(
     const after = binding ? bindingHead(header) : header;
     const old = normalise(oldHeader(fileLines, span, blocks, symbol.name));
     const before = binding ? bindingHead(old) : old;
-    if (before === "" || before === after) continue;
+    if (before === "" || callShape(before) === callShape(after)) continue;
 
     changes.push({
       name: symbol.name,

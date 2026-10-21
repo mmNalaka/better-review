@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { DocumentSymbol } from "./lsp";
-import { arrowHead, cutHeader, normalise, parseBlocks, signatureChanges, type ChangeBlock } from "./signatures";
+import { arrowHead, callShape, cutHeader, normalise, parseBlocks, signatureChanges, type ChangeBlock } from "./signatures";
 
 const symbol = (
   name: string,
@@ -139,6 +139,20 @@ describe("signatureChanges", () => {
     expect(found).toEqual([]);
   });
 
+  test("ignores a function that was only exported", () => {
+    const lines = ["export function lineReader(repoDir: string): ReadLine {", "  return read;", "}"];
+    const blocks: ChangeBlock[] = [
+      { at: 0, removed: ["function lineReader(repoDir: string): ReadLine {"], added: [lines[0]!] },
+    ];
+    expect(signatureChanges(lines, [symbol("lineReader", 0, 2)], blocks)).toEqual([]);
+  });
+
+  test("still reports a function that became async", () => {
+    const lines = ["export async function load(id: string) {", "}"];
+    const blocks: ChangeBlock[] = [{ at: 0, removed: ["export function load(id: string) {"], added: [lines[0]!] }];
+    expect(signatureChanges(lines, [symbol("load", 0, 1)], blocks)).toHaveLength(1);
+  });
+
   test("ignores a one-line arrow whose body changed but parameters did not", () => {
     const lines = ["export const three = () => add(3, 4);"];
     const blocks: ChangeBlock[] = [{ at: 0, removed: ["export const three = () => add(3);"], added: lines }];
@@ -150,5 +164,13 @@ describe("arrowHead", () => {
   test("stops at the first arrow outside brackets", () => {
     expect(arrowHead(" (cb: () => void) => cb()")).toBe(" (cb: () => void) =>");
     expect(arrowHead(" async x => x.map((y) => y)")).toBe(" async x =>");
+  });
+});
+
+describe("callShape", () => {
+  test("drops visibility, keeps everything a caller depends on", () => {
+    expect(callShape("export default async function f(a)")).toBe("async function f(a)");
+    expect(callShape("pub(crate) fn f(a: u8) -> u8")).toBe("fn f(a: u8) -> u8");
+    expect(callShape("export const f = (a) =>")).toBe("const f = (a) =>");
   });
 });
