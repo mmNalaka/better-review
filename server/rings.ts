@@ -24,6 +24,12 @@ export interface FileRing {
   readonly reason?: string;
 }
 
+/** One changed file calling into another — what a reading order is built from. */
+export interface CallEdge {
+  readonly from: string;
+  readonly to: string;
+}
+
 export interface RingProgress {
   /** 0 for the changed set, 1..n outward, -1 for the closing batch. */
   readonly ring: number;
@@ -33,6 +39,8 @@ export interface RingProgress {
   readonly done: boolean;
   /** Set when a cap stopped the walk. Never truncate silently (ticket 10). */
   readonly capped?: string;
+  /** Calls between changed files, found on the way to ring 1. */
+  readonly edges?: readonly CallEdge[];
 }
 
 export const MAX_SYMBOLS = 2000;
@@ -200,6 +208,9 @@ export async function* walkBlastRadius(
 
     const next: CallHierarchyItem[] = [];
     const batch: FileRing[] = [];
+    // Ring 1's callers of ring 0 are the only place changed-to-changed calls
+    // are seen; keep them, before `seen` hides a caller that is itself changed.
+    const edges = new Map<string, CallEdge>();
 
     for (const item of current) {
       const path = pathOf(item.uri, repoDir);
@@ -216,6 +227,10 @@ export async function* walkBlastRadius(
       }
 
       for (const caller of callers) {
+        const from = pathOf(caller.uri, repoDir);
+        if (ring === 1 && from && from !== path && changed.has(from)) {
+          edges.set(`${from}\0${path}`, { from, to: path });
+        }
         if (seen.has(keyOf(caller))) continue;
         seen.add(keyOf(caller));
         next.push(caller);
@@ -228,8 +243,15 @@ export async function* walkBlastRadius(
       }
     }
 
-    if (next.length === 0 && batch.length === 0) break;
-    yield { ring, files: batch, symbols: seen.size, elapsedMs: elapsed(), done: false };
+    if (next.length === 0 && batch.length === 0 && edges.size === 0) break;
+    yield {
+      ring,
+      files: batch,
+      symbols: seen.size,
+      elapsedMs: elapsed(),
+      done: false,
+      ...(edges.size > 0 ? { edges: [...edges.values()] } : {}),
+    };
     current = next;
   }
 
