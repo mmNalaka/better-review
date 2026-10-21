@@ -151,6 +151,52 @@ export function setLineNote(
   return { ...marks, notes };
 }
 
+/**
+ * Carry the notes on a hunk that was rewritten onto its new version. Each note
+ * finds its line again by text; one whose line is gone becomes a note about
+ * the whole hunk rather than landing on a line it was never about. A note that
+ * would collide with one already there is appended to it, never dropped.
+ */
+export function moveNotes(
+  marks: MarkFile,
+  path: string,
+  fromId: string,
+  to: { readonly id: string; readonly lines: readonly { readonly text: string }[] },
+  now: string,
+): MarkFile {
+  const find = (text: string | null | undefined): number | null => {
+    if (text === null || text === undefined) return null;
+    const index = to.lines.findIndex((line) => line.text === text);
+    return index === -1 ? null : index;
+  };
+
+  const notes = { ...marks.notes };
+  for (const [key, note] of Object.entries(marks.notes)) {
+    if (note.path !== path || note.hunkId !== fromId) continue;
+    delete notes[key];
+
+    const start = note.lineIndex === null ? null : find(note.lineText);
+    const end = start === null ? null : find(note.endLineText);
+    const endLineIndex = end !== null && end > start! ? end : null;
+    const target = noteKey(path, to.id, start, endLineIndex);
+    const existing = notes[target];
+
+    notes[target] = {
+      ...note,
+      hunkId: to.id,
+      lineIndex: start,
+      lineText: start === null ? null : note.lineText,
+      endLineIndex,
+      endLineText: endLineIndex === null ? null : (note.endLineText ?? null),
+      body: existing ? `${existing.body}\n\n${note.body}` : note.body,
+      updatedAt: now,
+      // Moved words sit on different lines: posting them again is correct.
+      published: existing ? null : note.published,
+    };
+  }
+  return { ...marks, notes };
+}
+
 /** One action for the whole file — the common case is "I read all of this". */
 export function setFileReviewed(
   marks: MarkFile,
