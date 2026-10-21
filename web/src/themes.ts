@@ -37,6 +37,7 @@ export const THEMES: readonly ThemeChoice[] = [
   { id: "one-dark-pro", label: "One Dark Pro", shiki: "one-dark-pro", dark: true },
   { id: "nord", label: "Nord", shiki: "nord", dark: true },
   { id: "tokyo-night", label: "Tokyo Night", shiki: "tokyo-night", dark: true },
+  { id: "ayu-mirage", label: "Ayu Mirage", shiki: "ayu-mirage", dark: true },
   { id: "catppuccin-mocha", label: "Catppuccin Mocha", shiki: "catppuccin-mocha", dark: true },
 ];
 
