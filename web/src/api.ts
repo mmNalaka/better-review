@@ -244,3 +244,7 @@ export const loadCallers = (
   character: number,
 ): Promise<CallersResult | { unsupported: true; reason: string }> =>
   getJson("/api/callers", { owner, repo, pr, rev, path, line, character });
+
+/** Settings the server was started with, for explaining them in the UI. */
+export const loadConfig = (): Promise<{ cloneRoots: readonly string[] }> =>
+  getJson("/api/config", {});
