@@ -248,3 +248,32 @@ export const loadCallers = (
 /** Settings the server was started with, for explaining them in the UI. */
 export const loadConfig = (): Promise<{ cloneRoots: readonly string[] }> =>
   getJson("/api/config", {});
+
+export type { ReviewThread, ThreadComment } from "../../server/threads";
+import type { ReviewThread, ThreadComment } from "../../server/threads";
+
+/** Review threads already on the diff, resolved and outdated ones included. */
+export const loadThreads = (
+  owner: string,
+  repo: string,
+  pr: number,
+): Promise<readonly ReviewThread[]> => getJson("/api/threads", { owner, repo, pr });
+
+/** Posts to GitHub at once. */
+export const replyToThread = (
+  owner: string,
+  repo: string,
+  pr: number,
+  threadId: string,
+  body: string,
+): Promise<ThreadComment> =>
+  sendJson("/api/threads/reply", { owner, repo, pr }, "POST", { threadId, body });
+
+export const resolveThread = (
+  owner: string,
+  repo: string,
+  pr: number,
+  threadId: string,
+  resolved: boolean,
+): Promise<ReviewThread> =>
+  sendJson("/api/threads/resolve", { owner, repo, pr }, "POST", { threadId, resolved });
