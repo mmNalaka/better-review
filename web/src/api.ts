@@ -210,3 +210,22 @@ export const publishReview = (
   event: ReviewEvent,
   body: string,
 ): Promise<PublishResult> => publishCall(owner, repo, pr, rev, event, body, false);
+
+export type { SinceReport } from "../../server/since";
+import type { SinceReport } from "../../server/since";
+
+/** How the pull request moved since the finished pass at `from`. */
+export const loadSince = (
+  owner: string,
+  repo: string,
+  pr: number,
+  rev: string,
+  from: string,
+): Promise<SinceReport> => getJson("/api/since", { owner, repo, pr, rev, from });
+
+/** The head GitHub has now — for noticing a push while the page is open. */
+export const loadHead = (
+  owner: string,
+  repo: string,
+  pr: number,
+): Promise<{ headSha: string }> => getJson("/api/head", { owner, repo, pr });
