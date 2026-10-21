@@ -355,6 +355,6 @@ All in `research-02/`:
 - **`pr-gc.sh`** — reclaims worktrees and `refs/prreview/*`, scoped to the
   server's own cache dir.
 - **`types.ts`** — the frontend payload sketch, annotated.
-- Captured API responses and diff comparisons (`pr146*.json`, `api-files.txt`,
-  `git-threedot.txt`, `git-twodot-tip.txt`, `auth-before.txt`, `iam-before.txt`)
+- Captured API responses and diff comparisons (`api-files.txt`,
+  `git-threedot.txt`, `git-twodot-tip.txt`)
   for anyone wanting to re-check the diff-base result without re-running.
