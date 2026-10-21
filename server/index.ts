@@ -10,7 +10,15 @@ import {
   parentOf,
   readBlob,
 } from "./git";
-import { fetchPrConversation, fetchPullRequest, parsePrRef, postReview } from "./github";
+import {
+  fetchPrConversation,
+  fetchPullRequest,
+  fetchReviewThreads,
+  parsePrRef,
+  postReview,
+  replyToThread,
+  setThreadResolved,
+} from "./github";
 import { planReview, REVIEW_EVENTS, reviewSubmission, type ReviewEvent } from "./publish";
 import { MarkError, type PrRef } from "./markmodel";
 import { readMarks, writeMarks } from "./markstore";
@@ -64,6 +72,16 @@ function requireRelativePath(url: URL): string {
     throw new BadRequest("Path must be repo-relative and may not traverse upward");
   }
   return path;
+}
+
+/** A GraphQL node id, e.g. `PRRT_kwDO…` — checked so nothing else reaches the query. */
+const THREAD_ID = /^[A-Za-z0-9_=-]{1,200}$/;
+
+function requireThreadId(value: unknown): string {
+  if (typeof value !== "string" || !THREAD_ID.test(value)) {
+    throw new BadRequest("threadId must be a review thread node id");
+  }
+  return value;
 }
 
 const SHA = /^[0-9a-f]{7,40}$/;
@@ -164,6 +182,34 @@ const routes: Record<string, (url: URL, request: Request) => Promise<Response>> 
   "/api/conversation": async (url) => {
     const pr = requirePr(url);
     return json(await fetchPrConversation(pr.owner, pr.repo, pr.number));
+  },
+
+  /** Review threads already on the diff — fresh each time, like the conversation. */
+  "/api/threads": async (url) => {
+    const pr = requirePr(url);
+    return json(await fetchReviewThreads(pr.owner, pr.repo, pr.number));
+  },
+
+  /** Reply to a thread. Posts straight to GitHub: the click is the confirmation. */
+  "/api/threads/reply": async (url, request) => {
+    if (request.method !== "POST") throw new BadRequest("Use POST");
+    requirePr(url);
+    const sent = (await jsonBody(request)) as Record<string, unknown>;
+    const threadId = requireThreadId(sent.threadId);
+    const body = sent.body;
+    if (typeof body !== "string" || body.trim() === "" || body.length > 65536) {
+      throw new BadRequest("body must be a non-empty string of at most 65536 characters");
+    }
+    return json(await replyToThread(threadId, body));
+  },
+
+  "/api/threads/resolve": async (url, request) => {
+    if (request.method !== "POST") throw new BadRequest("Use POST");
+    requirePr(url);
+    const sent = (await jsonBody(request)) as Record<string, unknown>;
+    const threadId = requireThreadId(sent.threadId);
+    if (typeof sent.resolved !== "boolean") throw new BadRequest("resolved must be true or false");
+    return json(await setThreadResolved(threadId, sent.resolved));
   },
 
   "/api/blob": async (url) => {
