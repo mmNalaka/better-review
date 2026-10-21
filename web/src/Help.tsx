@@ -72,6 +72,21 @@ export function Help({ onClose }: HelpProps) {
         </section>
 
         <section className="help-part">
+          <h3>Callers left behind</h3>
+          <p>
+            Press <b>b</b>, or <b>callers left behind</b> at the top, to list every function whose
+            signature this pull request changed, with its old and new header. Under each are the
+            calls to it on lines the pull request did not touch. Those are where a missed update
+            hides. A call on a changed line is taken as updated, which is likely but not certain.
+          </p>
+          <p>
+            It asks the language server about each changed function, so it runs only when you
+            first open it. A renamed function cannot be followed: its old callers no longer point
+            at it.
+          </p>
+        </section>
+
+        <section className="help-part">
           <h3>Marking what you have read</h3>
           <p>
             Tick the box on a file's row to mark the whole file, or the box in a hunk's header bar

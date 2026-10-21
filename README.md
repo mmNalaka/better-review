@@ -102,6 +102,14 @@ the whole gesture, it loads immediately.
   worth reading one step at a time.
 - **f** toggles full screen.
 
+### Callers left behind
+
+Press `b` to list each function whose signature the PR changed, with its old and new
+header, and the calls to it on lines the PR did not touch. That is where a missed update
+hides: a new required parameter, a dropped one, a function that became `async`. A call on
+a changed line counts as updated. It is likely but not certain. It needs the language
+server for the file's language, runs on first open, and cannot follow a rename.
+
 ### Marking
 
 Tick a hunk with the `✓` in its header bar, or a whole file with the mark beside its
