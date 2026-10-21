@@ -357,6 +357,9 @@ body {
 .seg button:disabled { opacity: .4; cursor: default; }
 .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
+/* In a row, centre the control; flex-start is only for the explorer's column. */
+.modebar .seg { align-self: center; }
+
 .seg-label {
   font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
   color: var(--faint); font-weight: 600;
@@ -928,8 +931,9 @@ body.resizing .explorer, body.resizing .codepane, body.resizing .diffpane {
 /* ── findings and publishing (ticket 04) ─────────────────────── */
 
 .findings-open {
-  font: inherit; font-size: 11.5px; cursor: pointer;
-  padding: 4px 10px; border-radius: 5px;
+  /* Same box as a .seg button, so the two sit level in the view bar. */
+  font: inherit; font-size: 11.5px; line-height: 1; cursor: pointer;
+  padding: 5px 10px; border-radius: 5px;
   border: 1px solid var(--line); background: var(--surface-2); color: var(--muted);
   white-space: nowrap;
 }
