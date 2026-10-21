@@ -2,8 +2,9 @@ import { Fragment, memo } from "react";
 
 import type { Hunk, MarkFile } from "./api";
 import type { LineNote } from "../../server/markmodel";
+import type { HunkMatch } from "../../server/rereview";
 import { parseNoteBody, withSuggestion } from "../../server/suggestion";
-import { coveredLines, isReviewed, noteAt, notesByLastLine } from "./marks";
+import { coveredLines, isReviewed, noteAt, notesByLastLine, notesIn } from "./marks";
 import { DiffRow } from "./DiffRow";
 import type { ThemedToken } from "./highlighter";
 
@@ -77,7 +78,14 @@ interface DiffHunkProps {
   readonly onCommit: (anchor: NoteAnchor) => void;
   readonly onCancel: () => void;
   readonly onNote: (anchor: NoteAnchor, body: string) => void;
+  /** Set only when this hunk is new or edited since the last finished pass. */
+  readonly since: "new" | "edited" | null;
+  /** For an edited hunk: the version you reviewed, against this one. */
+  readonly edit: HunkMatch | null;
+  readonly onMoveNotes: (fromId: string, to: Hunk) => void;
 }
+
+const DELTA_MARK = { same: " ", dropped: "−", added: "+" } as const;
 
 export const DiffHunk = memo(function DiffHunk({
   path,
@@ -98,7 +106,11 @@ export const DiffHunk = memo(function DiffHunk({
   onCommit,
   onCancel,
   onNote,
+  since,
+  edit,
+  onMoveNotes,
 }: DiffHunkProps) {
+  const stranded = edit ? notesIn(marks, path, edit.oldId).length : 0;
   const reviewed = isReviewed(marks, path, hunk.id);
   const hunkNote = noteAt(marks, path, hunk.id, null);
   const byLastLine = notesByLastLine(marks, path, hunk.id);
@@ -235,6 +247,18 @@ export const DiffHunk = memo(function DiffHunk({
         <button className="hunkhead" onClick={() => onJump(jumpTo - 1)}>
           {hunk.header}
         </button>
+        {since && (
+          <span
+            className={`since-badge ${since}`}
+            title={
+              since === "new"
+                ? "Not in the pull request at your last finished pass"
+                : "A rewrite of a hunk you reviewed or noted at your last pass"
+            }
+          >
+            {since}
+          </span>
+        )}
         <button
           className={`hunkflag${hunkNote ? " on" : ""}`}
           aria-pressed={hunkNote !== null}
@@ -244,6 +268,32 @@ export const DiffHunk = memo(function DiffHunk({
           ⚑
         </button>
       </div>
+
+      {edit && (
+        <details className="since-delta">
+          <summary>
+            You reviewed an earlier version — what changed since
+            {stranded > 0 && (
+              <button
+                className="since-link"
+                onClick={(event) => {
+                  event.preventDefault();
+                  onMoveNotes(edit.oldId, hunk);
+                }}
+                title="Carry the notes from the earlier version onto this one"
+              >
+                Move {stranded === 1 ? "its note" : `its ${stranded} notes`} here
+              </button>
+            )}
+          </summary>
+          {edit.delta.map((row, index) => (
+            <div className={`since-row ${row.change} ${row.kind}`} key={index}>
+              <span className="dl-mark">{DELTA_MARK[row.change]}</span>
+              {row.text || " "}
+            </div>
+          ))}
+        </details>
+      )}
 
       {openOn(null) && composing ? composer(composing) : hunkNote && comment(hunkNote, hunkAnchor)}
 

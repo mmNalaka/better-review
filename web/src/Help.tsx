@@ -65,6 +65,22 @@ export function Help({ onClose }: HelpProps) {
         </section>
 
         <section className="help-part">
+          <h3>Re-reviewing after a push</h3>
+          <p>
+            <b>Finish pass</b> remembers the head you have just read, and publishing a review does
+            the same. When the author pushes again, a strip under the toolbar says how many commits
+            arrived, whether history was rewritten, and how many hunks are <b>new</b>,{" "}
+            <b>edited</b> or <b>gone</b>. <b>What's new</b> narrows the explorer to those files.
+          </p>
+          <p>
+            An <b>edited</b> hunk is a rewrite of one you had ticked or noted: open its "what
+            changed since" panel to see the version you read against this one, and carry its notes
+            across. The page also checks GitHub every couple of minutes and offers a reload when
+            something new lands.
+          </p>
+        </section>
+
+        <section className="help-part">
           <h3>Description and conversation</h3>
           <p>
             The <b>comments</b> counter at the top opens the pull request's own description and
