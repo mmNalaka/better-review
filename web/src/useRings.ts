@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-import type { FileRing, RingProgress } from "../../server/rings";
+import type { CallEdge, FileRing, RingProgress } from "../../server/rings";
 
-export type { FileRing, RingKind } from "../../server/rings";
+export type { CallEdge, FileRing, RingKind } from "../../server/rings";
 
 export interface RingState {
   readonly byPath: ReadonlyMap<string, FileRing>;
@@ -11,6 +11,8 @@ export interface RingState {
   readonly capped: string | null;
   readonly symbols: number;
   readonly elapsedMs: number;
+  /** Calls between changed files: the graph a reading order is built from. */
+  readonly edges: readonly CallEdge[];
 }
 
 const EMPTY: RingState = {
@@ -20,6 +22,7 @@ const EMPTY: RingState = {
   capped: null,
   symbols: 0,
   elapsedMs: 0,
+  edges: [],
 };
 
 /**
@@ -62,6 +65,7 @@ export function useRings(
           capped: progress.capped ?? current.capped,
           symbols: progress.symbols,
           elapsedMs: progress.elapsedMs,
+          edges: progress.edges ? [...current.edges, ...progress.edges] : current.edges,
         };
       });
       if (progress.done) source.close();
