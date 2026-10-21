@@ -113,6 +113,14 @@ Marks are content-addressed: a hunk is identified by a hash of its added and rem
 lines, so a rebase that only shifts code keeps your progress, and one that rewrites it
 does not pretend otherwise.
 
+### Existing threads
+
+Review threads already on the pull request appear inline under the lines they were left
+on, so you read the diff with what others said beside it. Resolved threads start folded.
+Outdated ones, whose line is no longer in the diff, are listed above the file's hunks.
+**Reply**, **Resolve** and **Unresolve** post to GitHub immediately and are not held for
+your review. A note you published that opened a thread is shown once, as the thread.
+
 ### Commenting
 
 Press the `+` on any line. Drag down the gutter, or shift-click another line, to take
