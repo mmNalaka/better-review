@@ -29,6 +29,8 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: "s", shown: "s", does: "Show the commits", group: "Reviewing" },
   { key: "o", shown: "o", does: "Show the description and comments", group: "Reviewing" },
   { key: "h", shown: "h", does: "History of this file, to compare a past version", group: "Reviewing" },
+  { key: "P", shown: "⇧P", does: "Finish this pass — the next push is read against it", group: "Reviewing" },
+  { key: "w", shown: "w", does: "Only what is new since your last finished pass", group: "Reviewing" },
 
   { key: "1", shown: "1", does: "Diff beside the file", group: "Views" },
   { key: "2", shown: "2", does: "Diff only", group: "Views" },

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { FileDiff, Hunk, MarkFile } from "./api";
-import type { LineNote } from "../../server/markmodel";
+import { markKey, type LineNote } from "../../server/markmodel";
+import type { HunkMatch, SinceSummary } from "../../server/rereview";
 import { noteAt } from "./marks";
 import { DiffHunk, type NoteAnchor, type Rows } from "./DiffHunk";
 import { tokenise } from "./highlighter";
@@ -71,6 +72,11 @@ interface DiffPaneProps {
   readonly onJump: (line: number) => void;
   readonly onToggleHunk: (id: string, header: string) => void;
   readonly onNote: (anchor: NoteAnchor, body: string) => void;
+  /** Hunk status since the last finished pass; null when there is none to compare. */
+  readonly since: SinceSummary | null;
+  /** Rewrites of earlier hunks, by the new hunk's `markKey`. */
+  readonly matches: ReadonlyMap<string, HunkMatch>;
+  readonly onMoveNotes: (fromId: string, to: Hunk) => void;
 }
 
 export function DiffPane({
@@ -81,6 +87,9 @@ export function DiffPane({
   onJump,
   onToggleHunk,
   onNote,
+  since,
+  matches,
+  onMoveNotes,
 }: DiffPaneProps) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [rows, setRows] = useState<ReadonlyMap<string, Rows>>(new Map());
@@ -255,6 +264,7 @@ export function DiffPane({
       onCommit,
       onCancel: close,
       onNote,
+      onMoveNotes,
     }),
     [
       onJump,
@@ -266,6 +276,7 @@ export function DiffPane({
       onCommit,
       close,
       onNote,
+      onMoveNotes,
     ],
   );
 
@@ -282,7 +293,10 @@ export function DiffPane({
         <span className="eyebrow">Changed hunks</span>
         <span className="n">{diff.hunks.length}</span>
       </header>
-      {diff.hunks.map((hunk) => (
+      {diff.hunks.map((hunk) => {
+        const key = markKey(diff.path, hunk.id);
+        const status = since?.byHunk[key];
+        return (
         <DiffHunk
           key={hunk.header}
           path={diff.path}
@@ -293,9 +307,12 @@ export function DiffPane({
           selection={selecting?.hunkId === hunk.id ? selecting : null}
           composing={composing?.hunkId === hunk.id ? composing : null}
           draft={composing?.hunkId === hunk.id ? draft : ""}
+          since={status === "new" || status === "edited" ? status : null}
+          edit={status === "edited" ? (matches.get(key) ?? null) : null}
           {...handlers}
         />
-      ))}
+        );
+      })}
     </div>
   );
 }

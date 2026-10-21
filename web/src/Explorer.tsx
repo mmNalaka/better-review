@@ -58,6 +58,8 @@ interface ExplorerProps {
   readonly rings: RingState;
   readonly onSelect: (path: string) => void;
   readonly onToggleReviewed: (path: string) => void;
+  /** Files with new, edited or gone hunks since the last finished pass. */
+  readonly fresh: ReadonlySet<string>;
 }
 
 /**
@@ -69,7 +71,7 @@ interface ExplorerProps {
 type Mode = "changed" | "repo";
 
 export function Explorer({
-  changed, marks, index, selected, rings, onSelect, onToggleReviewed,
+  changed, marks, index, selected, rings, onSelect, onToggleReviewed, fresh,
 }: ExplorerProps) {
   const [mode, setMode] = useState<Mode>("changed");
   const [byRing, setByRing] = useState(false);
@@ -126,6 +128,11 @@ export function Explorer({
               <span className="path-prefix">{dirOf(file.path)}</span>
               <span className="path-base">{baseOf(file.path)}</span>
             </span>
+            {fresh.has(file.path) && (
+              <span className="rowfresh" title="New or edited since your last finished pass">
+                ●
+              </span>
+            )}
             {flagged(marks, file.path) && (
               <span className="rowflag" title="This file carries a note">
                 ⚑

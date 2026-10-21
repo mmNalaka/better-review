@@ -31,8 +31,13 @@ import { useTheme } from "./useTheme";
 import { useRings } from "./useRings";
 import { CodePane } from "./CodePane";
 import { Explorer } from "./Explorer";
-import { findings, setFileReviewed, setLineNote, toggleHunk } from "./marks";
+import { findings, moveNotes, setFileReviewed, setLineNote, toggleHunk } from "./marks";
 import { useMarks } from "./useMarks";
+import { usePrHead } from "./usePrHead";
+import { useSince } from "./useSince";
+import { SinceBar } from "./SinceBar";
+import { recordPass } from "../../server/markmodel";
+import { passAt } from "../../server/rereview";
 import { StartPage } from "./StartPage";
 import { Trail } from "./Trail";
 import {
@@ -93,6 +98,17 @@ export function App() {
   /** Ticket 04: hunk ticks and notes, persisted per pull request. */
   const marks = useMarks(review?.pr ?? null);
 
+  /** Re-review after a push: what moved since the last finished pass. */
+  const since = useSince(review?.pr ?? null, marks.marks, marks.index);
+  const prHead = usePrHead(review?.pr ?? null);
+  const [sinceFilter, setSinceFilter] = useState(false);
+  const fresh = useMemo(() => new Set(since.summary?.paths ?? []), [since.summary]);
+
+  // Nothing to compare against any more — a finished pass, or another PR.
+  useEffect(() => {
+    if (!since.summary) setSinceFilter(false);
+  }, [since.summary]);
+
   /**
    * Optional: narrow the whole review to one commit. Ticket 05 rejected this as
    * the default (84 commits is 84 passes) but it earns its place as a mode —
@@ -118,7 +134,12 @@ export function App() {
   );
 
   /** What the explorer lists: the whole PR, or just the selected commit. */
-  const visibleChanged = commitFilter && commitFiles ? commitFiles : (review?.changed ?? []);
+  const visibleChanged =
+    commitFilter && commitFiles
+      ? commitFiles
+      : sinceFilter
+        ? (review?.changed ?? []).filter((file) => fresh.has(file.path))
+        : (review?.changed ?? []);
 
   const changedPaths = useMemo(
     () => new Set(visibleChanged.map((file) => file.path)),
@@ -317,6 +338,40 @@ export function App() {
     );
   }, [here, marks]);
 
+  /**
+   * Record a finished pass at this head: the baseline the next push is read
+   * against. Refused until the hunk index is in, since a pass with no hunks
+   * would make every hunk of the next push look new.
+   */
+  const finishPass = useCallback(() => {
+    if (!review || marks.loading) return;
+    if (Object.keys(marks.index.files).length === 0 && review.changed.length > 0) return;
+    const { headSha, mergeBase } = review.pr;
+    marks.update((current, at) => recordPass(current, passAt(headSha, mergeBase, marks.index, at)));
+    setSinceFilter(false);
+  }, [review, marks]);
+
+  const toggleSinceFilter = useCallback(() => {
+    if (!since.summary) return;
+    setCommitFilter(null);
+    setSinceFilter((on) => !on);
+    go(NO_WALK);
+  }, [since.summary, go]);
+
+  const reload = useCallback(() => {
+    if (!review) return;
+    const params = readParams();
+    void open(refOf(review.pr), params.get("trail"), params.get("at"));
+  }, [review, open]);
+
+  const onMoveNotes = useCallback(
+    (fromId: string, to: { id: string; lines: readonly { text: string }[] }) => {
+      if (!here) return;
+      marks.update((current, at) => moveNotes(current, here.path, fromId, to, at));
+    },
+    [here, marks],
+  );
+
   /** Esc closes one thing at a time, nearest first. */
   const closeTop = useCallback(() => {
     if (showHelp) setShowHelp(false);
@@ -341,6 +396,8 @@ export function App() {
     s: () => setShowCommits((open) => !open),
     o: () => setShowOverview((open) => !open),
     h: () => here && setShowHistory((open) => !open),
+    P: finishPass,
+    w: toggleSinceFilter,
     "1": () => isChanged && setMode("split"),
     "2": () => isChanged && setMode("diff"),
     "3": () => setMode("file"),
@@ -513,11 +570,33 @@ export function App() {
             </span>{" "}
             {flags.length} {flags.length === 1 ? "finding" : "findings"}
           </button>
+          <button
+            className="findings-open"
+            onClick={finishPass}
+            disabled={marks.loading}
+            title={
+              since.pass
+                ? `Last finished at ${since.pass.headSha.slice(0, 7)}, ${new Date(since.pass.at).toLocaleString()} — P`
+                : "Remember this head, so the next push shows only what changed — P"
+            }
+          >
+            {since.pass?.headSha === review.pr.headSha ? "✓ Pass finished" : "Finish pass"}
+          </button>
           {marks.saving && <span className="seg-label">saving…</span>}
           {marks.error && <span className="notice">{marks.error}</span>}
           {diffLoading && <span className="seg-label">reading diff…</span>}
           <ThemePicker choice={theme.choice} onChange={theme.setChoice} />
         </div>
+      )}
+
+      {review && (
+        <SinceBar
+          since={since}
+          pushed={prHead.moved !== null}
+          filtering={sinceFilter}
+          onFilter={toggleSinceFilter}
+          onReload={reload}
+        />
       )}
 
       {showHelp && <Help onClose={() => setShowHelp(false)} />}
@@ -533,6 +612,8 @@ export function App() {
           }}
           onPublished={(stamped) => {
             marks.replace(stamped);
+            // Publishing is the end of a pass: the next push is read against it.
+            finishPass();
             // A submitted review is now part of the pull request's own
             // conversation — refetch so the Overview panel is not stale.
             conversation.refresh();
@@ -564,6 +645,7 @@ export function App() {
           selected={commitFilter}
           onSelect={(sha) => {
             setCommitFilter(sha);
+            setSinceFilter(false);
             go(NO_WALK);
           }}
           onClose={() => setShowCommits(false)}
@@ -587,6 +669,7 @@ export function App() {
             selected={here?.path ?? null}
             rings={rings}
             onSelect={selectFile}
+            fresh={fresh}
             onToggleReviewed={(path) =>
               marks.update((current, at) =>
                 setFileReviewed(
@@ -637,6 +720,9 @@ export function App() {
             onToggleHunk={(id, header) =>
               here && marks.update((current, at) => toggleHunk(current, here.path, id, header, at))
             }
+            since={since.summary}
+            matches={since.matches}
+            onMoveNotes={onMoveNotes}
             onNote={(anchor, body) =>
               here &&
               marks.update((current, at) =>
