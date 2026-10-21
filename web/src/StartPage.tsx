@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { CloneRoots } from "./CloneRoots";
+
 /**
  * What the app shows before any pull request is named — no `?pr=` in the URL
  * and nothing passed on the command line. There is no default PR to fall back
@@ -69,10 +71,13 @@ export function StartPage({ busy, onOpen }: StartPageProps) {
           </dd>
         </dl>
 
-        <p className="start-foot">
-          The repository needs a local clone under one of the configured clone roots. Press{" "}
-          <kbd>?</kbd> for how the review works and the keyboard shortcuts.
-        </p>
+        <section className="start-foot">
+          <h2 className="start-sub">Where your clones are found</h2>
+          <CloneRoots />
+          <p>
+            Press <kbd>?</kbd> for how the review works and the keyboard shortcuts.
+          </p>
+        </section>
       </div>
     </main>
   );
