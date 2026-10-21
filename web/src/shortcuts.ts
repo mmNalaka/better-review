@@ -19,6 +19,8 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: "k", shown: "k", does: "Previous changed file", group: "Moving" },
   { key: "n", shown: "n", does: "Next hunk in this file, or next change when comparing", group: "Moving" },
   { key: "p", shown: "p", does: "Previous hunk", group: "Moving" },
+  { key: "[", shown: "[", does: "Back one hop along the trail", group: "Moving" },
+  { key: "]", shown: "]", does: "Forward one hop, until you jump somewhere new", group: "Moving" },
   { key: "Backspace", shown: "⌫", does: "Back to the changes", group: "Moving" },
   { key: "/", shown: "/", does: "Jump to the pull request field", group: "Moving" },
 

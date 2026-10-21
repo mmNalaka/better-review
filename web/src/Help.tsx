@@ -32,8 +32,10 @@ export function Help({ onClose }: HelpProps) {
           </p>
           <p>
             Click any symbol in the file pane to jump to where it is defined. Each jump adds a{" "}
-            <b>hop</b> to the trail along the top — click a hop to go back to it, or{" "}
-            <b>the changes</b> to start again. The <b>ring</b> beside a file says how far it sits
+            <b>hop</b> to the trail along the top. Going back — a click on a hop, <b>[</b>, or the
+            browser's Back — returns to the line you clicked from, and the hops ahead stay until
+            you jump somewhere new, so <b>]</b> or Forward takes you there again.{" "}
+            <b>The changes</b> starts again. The <b>ring</b> beside a file says how far it sits
             from the change: <i>changed</i>, then ring 1 for what calls it, ring 2 for what calls
             that.
           </p>
