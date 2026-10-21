@@ -38,6 +38,8 @@ import { usePrHead } from "./usePrHead";
 import { useSince } from "./useSince";
 import { SinceBar } from "./SinceBar";
 import { CallersPanel, type CallersTarget } from "./CallersPanel";
+import { LeftBehindPanel } from "./LeftBehindPanel";
+import { useLeftBehind } from "./useLeftBehind";
 import { orderFiles, type ReadingOrder } from "./readingOrder";
 import { recordPass } from "../../server/markmodel";
 import { passAt } from "../../server/rereview";
@@ -185,6 +187,13 @@ export function App() {
 
   /** The callers panel's symbol, and the last symbol clicked, for `r`. */
   const [callersOf, setCallersOf] = useState<CallersTarget | null>(null);
+  /** Callers a changed signature left behind — fetched the first time it is opened. */
+  const [showLeftBehind, setShowLeftBehind] = useState(false);
+  const leftBehind = useLeftBehind(review?.pr ?? null, showLeftBehind);
+  const leftBehindCount =
+    leftBehind.state === "ready"
+      ? leftBehind.report.changes.reduce((sum, change) => sum + change.stale.length, 0)
+      : null;
   const [lastSymbol, setLastSymbol] = useState<CallersTarget | null>(null);
   useEffect(() => {
     setCallersOf(null);
@@ -440,6 +449,21 @@ export function App() {
     [review, callersOf, walk, ringOf, go],
   );
 
+  /** Open a place from the left-behind panel: a hop, so Back returns to where you were. */
+  const openLeftBehindSite = useCallback(
+    (site: { path: string; line: number }) => {
+      if (!review) return;
+      const next = pushHop(walk, here?.line ?? 0, {
+        path: site.path,
+        line: site.line,
+        ring: ringOf(site.path),
+      });
+      writeParams(refOf(review.pr), { ...next, at: next.at - 1 }, "replace");
+      go(next);
+    },
+    [review, walk, here, ringOf, go],
+  );
+
   /** Esc closes one thing at a time, nearest first. */
   const closeTop = useCallback(() => {
     if (showHelp) setShowHelp(false);
@@ -448,8 +472,18 @@ export function App() {
     else if (showCommits) setShowCommits(false);
     else if (showHistory) setShowHistory(false);
     else if (callersOf) setCallersOf(null);
+    else if (showLeftBehind) setShowLeftBehind(false);
     else if (compareWith) setCompareWith(null);
-  }, [showHelp, showOverview, showFindings, showCommits, showHistory, callersOf, compareWith]);
+  }, [
+    showHelp,
+    showOverview,
+    showFindings,
+    showCommits,
+    showHistory,
+    callersOf,
+    showLeftBehind,
+    compareWith,
+  ]);
 
   useKeys({
     j: () => stepFile(1),
@@ -468,6 +502,7 @@ export function App() {
     P: finishPass,
     w: toggleSinceFilter,
     r: () => setCallersOf((open) => (open ? null : lastSymbol)),
+    b: () => review && setShowLeftBehind((open) => !open),
     "1": () => isChanged && setMode("split"),
     "2": () => isChanged && setMode("diff"),
     "3": () => setMode("file"),
@@ -587,6 +622,14 @@ export function App() {
                   threads failed — retry
                 </button>
               )}
+              <button
+                className="counts-link"
+                aria-pressed={showLeftBehind}
+                onClick={() => setShowLeftBehind((open) => !open)}
+                title="Calls to changed signatures on lines this PR did not touch — b"
+              >
+                {leftBehindCount === null ? "callers left behind" : <><b>{leftBehindCount}</b> left behind</>}
+              </button>
             </span>
           </>
         )}
@@ -717,6 +760,14 @@ export function App() {
             setShowHistory(false);
           }}
           onClose={() => setShowHistory(false)}
+        />
+      )}
+
+      {review && showLeftBehind && (
+        <LeftBehindPanel
+          load={leftBehind}
+          onOpen={openLeftBehindSite}
+          onClose={() => setShowLeftBehind(false)}
         />
       )}
 
