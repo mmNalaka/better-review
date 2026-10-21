@@ -1,4 +1,4 @@
-import { MARKS_DIR, SERVER_PORT, WEB_DIST } from "./config";
+import { CLONE_ROOTS, MARKS_DIR, SERVER_PORT, WEB_DIST } from "./config";
 import {
   changedFiles,
   changedFilesInCommit,
@@ -104,7 +104,8 @@ async function loadReview(ref: string): Promise<ReviewPayload> {
   const clonePath = await findClone(owner, repo);
   if (!clonePath) {
     throw new BadRequest(
-      `No local clone of ${owner}/${repo} found. Clone it, or set BR_CLONE_ROOTS.`,
+      `No local clone of ${owner}/${repo} found in ${CLONE_ROOTS.join(", ") || "any clone root"}. ` +
+        "Clone it into one of those folders, or set BR_CLONE_ROOTS to the folder that holds it.",
     );
   }
 
@@ -146,6 +147,9 @@ async function pinSavedPasses(pr: PrRef, passes: Parameters<typeof pinPasses>[2]
 }
 
 const routes: Record<string, (url: URL, request: Request) => Promise<Response>> = {
+  /** What the server was started with that the user may need to change. */
+  "/api/config": async () => json({ cloneRoots: CLONE_ROOTS }),
+
   "/api/review": async (url) => {
     const ref = url.searchParams.get("pr");
     if (!ref) throw new BadRequest("Missing ?pr= — pass a PR URL or owner/repo#123");
