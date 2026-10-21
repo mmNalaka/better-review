@@ -29,6 +29,7 @@ import { hasBuild, serveAsset } from "./static";
 import { allHunks, fileDiff, indexHunks } from "./diff";
 import { walkBlastRadius } from "./rings";
 import { findCallers } from "./callers";
+import { findLeftBehind } from "./leftbehind";
 import { pinPasses, sinceReport } from "./since";
 import { compareFile, fileHistory } from "./history";
 import type { ReviewPayload } from "./types";
@@ -523,6 +524,26 @@ const routes: Record<string, (url: URL, request: Request) => Promise<Response>> 
       }
       throw error;
     }
+  },
+
+  /**
+   * Functions whose signature the PR changed, and their callers on lines it
+   * did not touch. Computed on request: it asks the language server once per
+   * changed signature, which is too much to do on every PR open.
+   */
+  "/api/left-behind": async (url) => {
+    const { dir, owner, repo } = await resolveClone(url);
+    const number = requireInteger(url, "pr");
+    const rev = url.searchParams.get("rev");
+    if (!rev) throw new BadRequest("Missing rev");
+
+    const cached = reviewCache.get(cacheKey(owner, repo, number, rev));
+    if (!cached) throw new BadRequest("Open the pull request first");
+    const worktree = await ensureWorktree(dir, owner, repo, number, rev);
+    const buildTags = await buildTagsFor(worktree.dir, cached.changed.map((file) => file.path));
+    return json(
+      await findLeftBehind({ repoDir: worktree.dir, base: cached.pr.mergeBase, head: rev, buildTags }),
+    );
   },
 
   /** Every caller of the symbol at a position — the hop upward, on demand. */
