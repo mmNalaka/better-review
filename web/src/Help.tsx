@@ -37,6 +37,15 @@ export function Help({ onClose }: HelpProps) {
             from the change: <i>changed</i>, then ring 1 for what calls it, ring 2 for what calls
             that.
           </p>
+          <p>
+            Double-click a word (or drag across it) in the file pane to highlight every place it
+            appears in that file. Click anywhere to clear it.
+          </p>
+          <p>
+            <b>History</b> (or <b>h</b>) lists every commit that touched the open file, renames
+            included. Pick one to lay that version beside the pull request head, side by side —{" "}
+            <b>n</b> and <b>p</b> step between the changes, <b>Esc</b> goes back.
+          </p>
         </section>
 
         <section className="help-part">
@@ -50,6 +59,15 @@ export function Help({ onClose }: HelpProps) {
           <p>
             Marks are keyed to the content of a hunk, not its line numbers, so a rebase that only
             shifts code keeps your progress. They are saved as you go, per pull request.
+          </p>
+        </section>
+
+        <section className="help-part">
+          <h3>Description and conversation</h3>
+          <p>
+            The <b>comments</b> counter at the top opens the pull request's own description and
+            conversation — its body, general comments, and review summaries GitHub already holds.
+            It is read-only: nothing posted here comes from this panel.
           </p>
         </section>
 

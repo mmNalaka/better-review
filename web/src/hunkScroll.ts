@@ -11,10 +11,11 @@
 const EDGE = 8;
 
 export function stepHunk(direction: 1 | -1): boolean {
-  const pane = document.querySelector(".diffpane");
+  // The compare pane, when open, stands in for the diff: step its change blocks.
+  const pane = document.querySelector(".diffpane, .comparepane");
   if (!pane) return false;
 
-  const blocks = [...pane.querySelectorAll<HTMLElement>(".hunkblock")];
+  const blocks = [...pane.querySelectorAll<HTMLElement>(".hunkblock, .cmp-change")];
   if (blocks.length === 0) return false;
 
   const top = pane.getBoundingClientRect().top;

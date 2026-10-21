@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { tokenise, type ThemedToken } from "./highlighter";
 import type { ThemeName } from "./themes";
 
@@ -15,6 +15,19 @@ interface Piece {
   readonly text: string;
   readonly at: number;
   readonly symbol: boolean;
+}
+
+/** A double-click's first click must not navigate away before the word is selected. */
+const DOUBLE_CLICK_MS = 250;
+
+/** The selected text, when it is a single identifier worth highlighting. */
+function selectedIdentifier(): string | null {
+  const text = window.getSelection()?.toString().trim() ?? "";
+  return IS_IDENTIFIER.test(text) ? text : null;
+}
+
+function selectionIsCollapsed(): boolean {
+  return window.getSelection()?.isCollapsed ?? true;
 }
 
 function splitToken(content: string, start: number): readonly Piece[] {
@@ -44,6 +57,37 @@ export function CodePane({
   path, text, ring, focusLine, changedLines, resolving, notice, theme, onSymbolClick,
 }: CodePaneProps) {
   const [lines, setLines] = useState<readonly (readonly ThemedToken[])[]>([]);
+  const [term, setTerm] = useState<string | null>(null);
+  const pendingClick = useRef<number | null>(null);
+
+  useEffect(() => setTerm(null), [path]);
+  useEffect(() => () => {
+    if (pendingClick.current !== null) window.clearTimeout(pendingClick.current);
+  }, []);
+
+  const hits = useMemo(() => {
+    if (term === null) return 0;
+    return lines.reduce(
+      (count, tokens) =>
+        count + tokens.reduce(
+          (n, token) => n + splitToken(token.content, 0).filter((piece) => piece.text === term).length,
+          0,
+        ),
+      0,
+    );
+  }, [lines, term]);
+
+  const onSymClick = (event: MouseEvent, line: number, character: number) => {
+    if (pendingClick.current !== null) window.clearTimeout(pendingClick.current);
+    pendingClick.current = null;
+    if (event.detail > 1) return;
+    pendingClick.current = window.setTimeout(() => {
+      pendingClick.current = null;
+      // A drag is selecting a word to highlight, not navigating. Read late: a
+      // click inside an existing selection collapses it only after the event.
+      if (selectionIsCollapsed()) onSymbolClick(line, character);
+    }, DOUBLE_CLICK_MS);
+  };
 
   useEffect(() => {
     if (text === null || path === null) {
@@ -90,8 +134,16 @@ export function CodePane({
         </span>
         {resolving && <span className="resolving">resolving…</span>}
         {notice && <span className="notice">{notice}</span>}
+        {term !== null && (
+          <span className="resolving" title="Select another word, or click anywhere to clear">
+            {hits} × <code>{term}</code>
+          </span>
+        )}
       </header>
-      <div className={`code${resolving ? " busy" : ""}`}>
+      <div
+        className={`code${resolving ? " busy" : ""}`}
+        onMouseUp={() => window.setTimeout(() => setTerm(selectedIdentifier()), 0)}
+      >
         {lines.map((tokens, lineIndex) => {
           let character = 0;
           return (
@@ -113,9 +165,9 @@ export function CodePane({
                     piece.symbol ? (
                       <span
                         key={`${i}-${j}`}
-                        className="sym"
+                        className={`sym${piece.text === term ? " hit" : ""}`}
                         style={style}
-                        onClick={() => onSymbolClick(lineIndex, piece.at)}
+                        onClick={(event) => onSymClick(event, lineIndex, piece.at)}
                       >
                         {piece.text}
                       </span>

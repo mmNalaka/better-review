@@ -7,6 +7,8 @@ export interface PullRequest {
   readonly repo: string;
   readonly number: number;
   readonly title: string;
+  /** The pull request's description, as written on GitHub. */
+  readonly body: string;
   readonly headSha: string;
   /** Branch the PR merges into. */
   readonly baseRef: string;
