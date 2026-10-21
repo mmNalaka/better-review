@@ -36,6 +36,8 @@ import { useMarks } from "./useMarks";
 import { usePrHead } from "./usePrHead";
 import { useSince } from "./useSince";
 import { SinceBar } from "./SinceBar";
+import { CallersPanel, type CallersTarget } from "./CallersPanel";
+import { orderFiles, type ReadingOrder } from "./readingOrder";
 import { recordPass } from "../../server/markmodel";
 import { passAt } from "../../server/rereview";
 import { StartPage } from "./StartPage";
@@ -53,6 +55,18 @@ import {
 } from "./hops";
 
 const readParams = () => new URLSearchParams(location.search);
+
+const ORDER_KEY = "better-review:reading-order";
+
+/** A remembered preference only: unreadable storage just means the default. */
+function savedOrder(): ReadingOrder {
+  try {
+    const saved = localStorage.getItem(ORDER_KEY);
+    return saved === "callees" || saved === "entries" ? saved : "path";
+  } catch {
+    return "path";
+  }
+}
 
 const refOf = (pr: ReviewPayload["pr"]) => `${pr.owner}/${pr.repo}#${pr.number}`;
 
@@ -145,6 +159,32 @@ export function App() {
     () => new Set(visibleChanged.map((file) => file.path)),
     [visibleChanged],
   );
+
+  /** Every file the PR changed, whatever the filter — callers are marked against it. */
+  const prPaths = useMemo(() => new Set(review?.changed.map((file) => file.path)), [review]);
+
+  /** Reading order, from the calls between changed files the ring walk found. */
+  const [order, setOrderState] = useState<ReadingOrder>(savedOrder);
+  const setOrder = useCallback((next: ReadingOrder) => {
+    setOrderState(next);
+    try {
+      localStorage.setItem(ORDER_KEY, next);
+    } catch {
+      // not remembered across reloads; the choice still applies now
+    }
+  }, []);
+  const orderedChanged = useMemo(
+    () => orderFiles(visibleChanged, rings.edges, order),
+    [visibleChanged, rings.edges, order],
+  );
+
+  /** The callers panel's symbol, and the last symbol clicked, for `r`. */
+  const [callersOf, setCallersOf] = useState<CallersTarget | null>(null);
+  const [lastSymbol, setLastSymbol] = useState<CallersTarget | null>(null);
+  useEffect(() => {
+    setCallersOf(null);
+    setLastSymbol(null);
+  }, [review]);
 
   useEffect(() => {
     if (!review || !commitFilter) {
@@ -314,14 +354,14 @@ export function App() {
   /** Step through the changed files without reaching for the mouse. */
   const stepFile = useCallback(
     (direction: 1 | -1) => {
-      const paths = visibleChanged.map((file) => file.path);
+      const paths = orderedChanged.map((file) => file.path);
       if (paths.length === 0) return;
       const at = here ? paths.indexOf(here.path) : -1;
       const next = at === -1 ? (direction === 1 ? 0 : paths.length - 1) : at + direction;
       const path = paths[Math.max(0, Math.min(paths.length - 1, next))];
       if (path) selectFile(path);
     },
-    [visibleChanged, here, selectFile],
+    [orderedChanged, here, selectFile],
   );
 
   const toggleReviewedHere = useCallback(() => {
@@ -372,6 +412,21 @@ export function App() {
     [here, marks],
   );
 
+  /** Open a call site from the callers panel: a hop, so Back returns to the symbol. */
+  const openCallSite = useCallback(
+    (site: { path: string; line: number }) => {
+      if (!review || !callersOf) return;
+      const next = pushHop(walk, callersOf.line, {
+        path: site.path,
+        line: site.line,
+        ring: ringOf(site.path),
+      });
+      writeParams(refOf(review.pr), { ...next, at: next.at - 1 }, "replace");
+      go(next);
+    },
+    [review, callersOf, walk, ringOf, go],
+  );
+
   /** Esc closes one thing at a time, nearest first. */
   const closeTop = useCallback(() => {
     if (showHelp) setShowHelp(false);
@@ -379,8 +434,9 @@ export function App() {
     else if (showFindings) setShowFindings(false);
     else if (showCommits) setShowCommits(false);
     else if (showHistory) setShowHistory(false);
+    else if (callersOf) setCallersOf(null);
     else if (compareWith) setCompareWith(null);
-  }, [showHelp, showOverview, showFindings, showCommits, showHistory, compareWith]);
+  }, [showHelp, showOverview, showFindings, showCommits, showHistory, callersOf, compareWith]);
 
   useKeys({
     j: () => stepFile(1),
@@ -398,6 +454,7 @@ export function App() {
     h: () => here && setShowHistory((open) => !open),
     P: finishPass,
     w: toggleSinceFilter,
+    r: () => setCallersOf((open) => (open ? null : lastSymbol)),
     "1": () => isChanged && setMode("split"),
     "2": () => isChanged && setMode("diff"),
     "3": () => setMode("file"),
@@ -639,6 +696,16 @@ export function App() {
         />
       )}
 
+      {review && callersOf && (
+        <CallersPanel
+          pr={review.pr}
+          target={callersOf}
+          changed={prPaths}
+          onOpen={openCallSite}
+          onClose={() => setCallersOf(null)}
+        />
+      )}
+
       {review && showCommits && (
         <CommitsPanel
           commits={review.commits}
@@ -663,7 +730,11 @@ export function App() {
       >
         {review ? (
           <Explorer
-            changed={visibleChanged}
+            changed={orderedChanged}
+            order={order}
+            onOrder={setOrder}
+            hasGraph={rings.edges.length > 0}
+            graphPending={!rings.done}
             marks={marks.marks}
             index={marks.index}
             selected={here?.path ?? null}
@@ -753,7 +824,18 @@ export function App() {
           resolving={resolving}
           notice={notice}
           theme={theme.resolved}
-          onSymbolClick={(line, character) => void onSymbolClick(line, character)}
+          onSymbolClick={(line, character, callers) => {
+            if (!here) return;
+            const target = { path: here.path, line, character };
+            setLastSymbol(target);
+            if (callers) {
+              setShowHistory(false);
+              setShowCommits(false);
+              setCallersOf(target);
+            } else {
+              void onSymbolClick(line, character);
+            }
+          }}
         />
         )}
       </div>

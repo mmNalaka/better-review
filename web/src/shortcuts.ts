@@ -23,6 +23,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: "]", shown: "]", does: "Forward one hop, until you jump somewhere new", group: "Moving" },
   { key: "Backspace", shown: "⌫", does: "Back to the changes", group: "Moving" },
   { key: "/", shown: "/", does: "Jump to the pull request field", group: "Moving" },
+  { key: "r", shown: "r", does: "Callers of the last symbol you clicked (or ⌥-click one)", group: "Moving" },
 
   { key: "v", shown: "v", does: "Mark this file reviewed, or clear it", group: "Reviewing" },
   { key: "c", shown: "c", does: "Open the findings drawer", group: "Reviewing" },

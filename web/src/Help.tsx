@@ -51,6 +51,21 @@ export function Help({ onClose }: HelpProps) {
         </section>
 
         <section className="help-part">
+          <h3>Callers and reading order</h3>
+          <p>
+            <b>⌥-click</b> a symbol, or press <b>r</b> after clicking one, to list everything in the
+            repo that calls it — or every reference, for something that is not a function. Callers
+            in changed files come first; pick one to hop there, and Back returns you.
+          </p>
+          <p>
+            Above the changed files, <b>callees first</b> orders them so code you read has already
+            been seen where it is used, and <b>entry points first</b> starts where calls come in.
+            Both come from the calls the blast radius found between changed files; files with no
+            such calls stay at the end. <b>j</b> and <b>k</b> follow whichever order is chosen.
+          </p>
+        </section>
+
+        <section className="help-part">
           <h3>Marking what you have read</h3>
           <p>
             Tick the box on a file's row to mark the whole file, or the box in a hunk's header bar

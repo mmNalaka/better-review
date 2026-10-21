@@ -1365,3 +1365,40 @@ body.picking-lines .dl-text { pointer-events: none; }
 .since-row.dropped { color: var(--del); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--del) 45%, transparent); }
 .since-row.added { color: var(--add); }
 .since-row:last-child { padding-bottom: 6px; }
+
+/* Reading order in the explorer header. */
+.order-seg { margin-top: 8px; }
+.order-seg button { font-size: 11px; }
+.order-seg button:disabled { opacity: .5; cursor: default; }
+
+/* Callers panel: sites grouped by file. */
+.callers-note { margin: 0; padding: 4px 16px; font-size: 12px; color: var(--faint); }
+
+.callers-file { padding: 6px 0 4px; border-bottom: 1px solid var(--line-soft); }
+
+.callers-file h4 {
+  display: flex; align-items: center; gap: 6px; margin: 0; padding: 2px 16px;
+  font-size: 12px; font-weight: 600; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.callers-site {
+  display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 3px 16px;
+  font: inherit; font-size: 12px; text-align: left; color: var(--muted);
+  border: 0; background: none; cursor: pointer;
+}
+
+.callers-site:hover { background: var(--surface-2); }
+.callers-site:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.callers-line {
+  flex: 0 0 auto; min-width: 3ch; text-align: right; color: var(--faint);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.callers-fn { flex: 0 0 auto; color: var(--accent); }
+
+.callers-preview {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink);
+}

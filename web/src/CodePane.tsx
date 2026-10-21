@@ -50,7 +50,8 @@ interface CodePaneProps {
   readonly resolving: boolean;
   readonly notice: string | null;
   readonly theme: ThemeName;
-  readonly onSymbolClick: (line: number, character: number) => void;
+  /** `callers` is set for ⌥-click: who calls this, rather than where it is defined. */
+  readonly onSymbolClick: (line: number, character: number, callers: boolean) => void;
 }
 
 export function CodePane({
@@ -81,11 +82,12 @@ export function CodePane({
     if (pendingClick.current !== null) window.clearTimeout(pendingClick.current);
     pendingClick.current = null;
     if (event.detail > 1) return;
+    const callers = event.altKey;
     pendingClick.current = window.setTimeout(() => {
       pendingClick.current = null;
       // A drag is selecting a word to highlight, not navigating. Read late: a
       // click inside an existing selection collapses it only after the event.
-      if (selectionIsCollapsed()) onSymbolClick(line, character);
+      if (selectionIsCollapsed()) onSymbolClick(line, character, callers);
     }, DOUBLE_CLICK_MS);
   };
 

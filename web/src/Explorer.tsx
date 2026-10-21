@@ -4,6 +4,9 @@ import type { ChangedFile, HunkIndex, MarkFile } from "./api";
 import { fileState, flagged, type FileState } from "./marks";
 import { RingMark } from "./RingMark";
 import type { RingState } from "./useRings";
+import { ORDER_LABEL, type ReadingOrder } from "./readingOrder";
+
+const ORDERS: readonly ReadingOrder[] = ["path", "callees", "entries"];
 
 /**
  * The "Changed files" mode from ticket 06: grouped by review state, not by path,
@@ -60,6 +63,12 @@ interface ExplorerProps {
   readonly onToggleReviewed: (path: string) => void;
   /** Files with new, edited or gone hunks since the last finished pass. */
   readonly fresh: ReadonlySet<string>;
+  /** How `changed` is ordered; it arrives already sorted. */
+  readonly order: ReadingOrder;
+  readonly onOrder: (order: ReadingOrder) => void;
+  /** Whether the ring walk found any calls between changed files. */
+  readonly hasGraph: boolean;
+  readonly graphPending: boolean;
 }
 
 /**
@@ -72,6 +81,7 @@ type Mode = "changed" | "repo";
 
 export function Explorer({
   changed, marks, index, selected, rings, onSelect, onToggleReviewed, fresh,
+  order, onOrder, hasGraph, graphPending,
 }: ExplorerProps) {
   const [mode, setMode] = useState<Mode>("changed");
   const [byRing, setByRing] = useState(false);
@@ -203,6 +213,29 @@ export function Explorer({
         </span>
         <div className="bar">
           <i style={{ width: `${percent}%` }} />
+        </div>
+        <div className="seg order-seg" role="group" aria-label="Reading order">
+          {ORDERS.map((option) => (
+            <button
+              key={option}
+              aria-pressed={order === option}
+              disabled={option !== "path" && !hasGraph}
+              title={
+                option === "path"
+                  ? "Alphabetical"
+                  : hasGraph
+                    ? option === "callees"
+                      ? "What is called before what calls it"
+                      : "Where calls come in, then down"
+                    : graphPending
+                      ? "Waiting for the call graph…"
+                      : "No calls between the changed files were found"
+              }
+              onClick={() => onOrder(option)}
+            >
+              {ORDER_LABEL[option]}
+            </button>
+          ))}
         </div>
       </div>
       {section("Not reviewed", open)}
