@@ -45,7 +45,7 @@ The ring state of code we should have been able to place and could not — a ser
 _Avoid_: none, unresolved, empty
 
 **Not applicable**:
-The ring state of a file no language server covers — markdown, YAML, Terraform. There is no call graph to be placed in, so this is not a failure to measure. On [acme/auth#146](https://github.com/acme/auth/pull/146) it is 9 of 32 changed files.
+The ring state of a file no language server covers — markdown, YAML, Terraform. There is no call graph to be placed in, so this is not a failure to measure. On the PR the tickets were measured against it was 9 of 32 changed files.
 _Avoid_: unknown, unsupported, none, n/a in prose
 
 **Working**:

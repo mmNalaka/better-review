@@ -12,7 +12,7 @@ metadata; everything else is `git`.
 ```bash
 bun install
 bun run build
-bun start acme/auth#146
+bun start owner/repo#123
 ```
 
 That opens <http://localhost:4317> with the pull request loaded.
@@ -64,7 +64,7 @@ bun start                       # http://localhost:4317
 
 ```bash
 bun link                        # once, from the repo
-better-review acme/auth#146    # from anywhere
+better-review owner/repo#123    # from anywhere
 ```
 
 **Publishing to a registry** is not set up: `package.json` still says `"private": true`
