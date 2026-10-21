@@ -1,0 +1,8 @@
+HEAD=51c0131cd64b8992cab890051d891650eae43887
+BRANCH=feat/scoped-user-role-assignments
+STATUS<<
+ M services/iam-api/src/modules/role-assignments/role-assignments.service.ts
+>>
+STASH=8
+INDEXTREE=9a294e77eee8fb11c11c9748d2faa9af9debd946
+MTIME=1787564200

@@ -1,0 +1,231 @@
+[
+  {
+    "label": "tls+ts5.9 @ iam-mono COPY with NO node_modules",
+    "root": "/Users/nalaka.manathunga/code/better-review/.scratch/code-review-client/research-01/degrade/iam-mono-nodeps",
+    "definition": {
+      "ms": 45165,
+      "msFromSpawn": 46496,
+      "attempts": 186,
+      "timedOut": true,
+      "answer": []
+    },
+    "incomingCalls": {
+      "msFromSpawn": 46631,
+      "attempts": 1,
+      "timedOut": false,
+      "n": 9,
+      "callers": [
+        "createAssignment",
+        "createRole",
+        "deleteAssignment",
+        "deleteRole",
+        "insertRole",
+        "promoteRole",
+        "updateAssignmentScope",
+        "updateRole",
+        "updateRole"
+      ]
+    },
+    "diagnosticsOnOpenFiles": 1,
+    "diagnosticsSample": [
+      "transaction.ts: Cannot find module 'kysely' or its corresponding type declarations."
+    ],
+    "rssMB": 212.4
+  },
+  {
+    "label": "tsgo @ iam-mono COPY with NO node_modules",
+    "root": "/Users/nalaka.manathunga/code/better-review/.scratch/code-review-client/research-01/degrade/iam-mono-nodeps",
+    "definition": {
+      "ms": 45036,
+      "msFromSpawn": 45475,
+      "attempts": 203,
+      "timedOut": true,
+      "answer": []
+    },
+    "incomingCalls": {
+      "msFromSpawn": 45514,
+      "attempts": 1,
+      "timedOut": false,
+      "n": 9,
+      "callers": [
+        "createAssignment",
+        "createRole",
+        "deleteAssignment",
+        "deleteRole",
+        "insertRole",
+        "promoteRole",
+        "updateAssignmentScope",
+        "updateRole",
+        "updateRole"
+      ]
+    },
+    "diagnosticsOnOpenFiles": 2,
+    "diagnosticsSample": [
+      "tsconfig.json: File '@tsconfig/strictest/tsconfig' not found.",
+      "tsconfig.json: File '@tsconfig/node24/tsconfig.json' not found."
+    ],
+    "rssMB": 40.5
+  },
+  {
+    "label": "gopls @ auth COPY with a TYPE ERROR in the same package",
+    "root": "/Users/nalaka.manathunga/code/better-review/.scratch/code-review-client/research-01/degrade/auth-broken",
+    "definition": {
+      "ms": 47586,
+      "msFromSpawn": 48958,
+      "attempts": 1,
+      "timedOut": false,
+      "answer": [
+        "service/identity.go:190"
+      ]
+    },
+    "incomingCalls": {
+      "msFromSpawn": 49253,
+      "attempts": 1,
+      "timedOut": false,
+      "n": 3,
+      "callers": [
+        "CreateIdentityIntercomJWT",
+        "TestAddAttributesIfPresent",
+        "TestAddAttributesIfPresent_MultipleAttributes"
+      ]
+    },
+    "diagnosticsOnOpenFiles": 1,
+    "diagnosticsSample": [
+      "identity.go: cannot use \"not an int\" (untyped string constant) as int value in return statement"
+    ],
+    "rssMB": 329.5
+  },
+  {
+    "label": "gopls @ auth with EMPTY GOMODCACHE + GOPROXY=off (deps missing)",
+    "root": "/Users/nalaka.manathunga/code/auth",
+    "definition": {
+      "ms": 45063,
+      "msFromSpawn": 46183,
+      "attempts": 205,
+      "timedOut": true,
+      "answer": []
+    },
+    "error": "TypeError: (ch.result ?? []).map is not a function",
+    "serverLogTail": ""
+  },
+  {
+    "label": "gopls @ auth  process-restart pass 1 (on-disk cache WARM)",
+    "root": "/Users/nalaka.manathunga/code/auth",
+    "definition": {
+      "ms": 22120,
+      "msFromSpawn": 23943,
+      "attempts": 1,
+      "timedOut": false,
+      "answer": [
+        "service/identity.go:190"
+      ]
+    },
+    "incomingCalls": {
+      "msFromSpawn": 24049,
+      "attempts": 1,
+      "timedOut": false,
+      "n": 3,
+      "callers": [
+        "CreateIdentityIntercomJWT",
+        "TestAddAttributesIfPresent",
+        "TestAddAttributesIfPresent_MultipleAttributes"
+      ]
+    },
+    "diagnosticsOnOpenFiles": 0,
+    "diagnosticsSample": [],
+    "rssMB": 339.6
+  },
+  {
+    "label": "gopls @ auth  process-restart pass 2 (on-disk cache WARM)",
+    "root": "/Users/nalaka.manathunga/code/auth",
+    "definition": {
+      "ms": 25733,
+      "msFromSpawn": 27044,
+      "attempts": 1,
+      "timedOut": false,
+      "answer": [
+        "service/identity.go:190"
+      ]
+    },
+    "incomingCalls": {
+      "msFromSpawn": 27206,
+      "attempts": 1,
+      "timedOut": false,
+      "n": 3,
+      "callers": [
+        "CreateIdentityIntercomJWT",
+        "TestAddAttributesIfPresent",
+        "TestAddAttributesIfPresent_MultipleAttributes"
+      ]
+    },
+    "diagnosticsOnOpenFiles": 0,
+    "diagnosticsSample": [],
+    "rssMB": 509
+  },
+  {
+    "label": "tsgo @ iam-mono  process-restart pass 1",
+    "root": "/Users/nalaka.manathunga/code/iam-mono",
+    "definition": {
+      "ms": 3351,
+      "msFromSpawn": 3559,
+      "attempts": 1,
+      "timedOut": false,
+      "answer": [
+        "node_modules/.pnpm/kysely@0.29.2/node_modules/kysely/dist/kysely.d.ts:207"
+      ]
+    },
+    "incomingCalls": {
+      "msFromSpawn": 3754,
+      "attempts": 1,
+      "timedOut": false,
+      "n": 9,
+      "callers": [
+        "createAssignment",
+        "createRole",
+        "deleteAssignment",
+        "deleteRole",
+        "insertRole",
+        "promoteRole",
+        "updateAssignmentScope",
+        "updateRole",
+        "updateRole"
+      ]
+    },
+    "diagnosticsOnOpenFiles": 0,
+    "diagnosticsSample": [],
+    "rssMB": 206.5
+  },
+  {
+    "label": "tsgo @ iam-mono  process-restart pass 2",
+    "root": "/Users/nalaka.manathunga/code/iam-mono",
+    "definition": {
+      "ms": 2092,
+      "msFromSpawn": 3443,
+      "attempts": 1,
+      "timedOut": false,
+      "answer": [
+        "node_modules/.pnpm/kysely@0.29.2/node_modules/kysely/dist/kysely.d.ts:207"
+      ]
+    },
+    "incomingCalls": {
+      "msFromSpawn": 3480,
+      "attempts": 1,
+      "timedOut": false,
+      "n": 9,
+      "callers": [
+        "createAssignment",
+        "createRole",
+        "deleteAssignment",
+        "deleteRole",
+        "insertRole",
+        "promoteRole",
+        "updateAssignmentScope",
+        "updateRole",
+        "updateRole"
+      ]
+    },
+    "diagnosticsOnOpenFiles": 0,
+    "diagnosticsSample": [],
+    "rssMB": 186.3
+  }
+]
