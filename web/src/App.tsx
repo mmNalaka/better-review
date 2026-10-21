@@ -18,6 +18,7 @@ import { Findings } from "./Findings";
 import { Help } from "./Help";
 import { Overview } from "./Overview";
 import { useConversation } from "./useConversation";
+import { useThreads } from "./useThreads";
 import { Branches } from "./Branches";
 import { CopyPath } from "./CopyPath";
 import { ThemePicker } from "./ThemePicker";
@@ -147,6 +148,10 @@ export function App() {
     review?.pr.number ?? null,
   );
 
+  /** Review threads already on the diff, drawn under the lines they were left on. */
+  const threads = useThreads(review?.pr ?? null);
+  const openThreads = threads.threads.filter((thread) => !thread.resolved).length;
+
   /** What the explorer lists: the whole PR, or just the selected commit. */
   const visibleChanged =
     commitFilter && commitFiles
@@ -206,6 +211,14 @@ export function App() {
 
   const here = hereOf(walk);
   const isChanged = here !== null && changedPaths.has(here.path);
+
+  // GitHub anchors threads to the PR head; a single commit's diff numbers its
+  // lines differently, so threads are left out while narrowed to one.
+  const threadsHere = useMemo(
+    () =>
+      here && !commitFilter ? threads.threads.filter((thread) => thread.path === here.path) : [],
+    [threads.threads, here?.path, commitFilter],
+  );
 
   // A comparison belongs to one file: moving to another file ends it.
   useEffect(() => setCompareWith(null), [here?.path, review]);
@@ -564,6 +577,16 @@ export function App() {
               >
                 <b>{conversation.entries.length}</b> comments
               </button>
+              {threads.threads.length > 0 && (
+                <span title={`${threads.threads.length - openThreads} resolved`}>
+                  <b>{openThreads}</b> open threads
+                </span>
+              )}
+              {threads.error && (
+                <button className="counts-link" onClick={threads.refresh} title={threads.error}>
+                  threads failed — retry
+                </button>
+              )}
             </span>
           </>
         )}
@@ -674,6 +697,7 @@ export function App() {
             // A submitted review is now part of the pull request's own
             // conversation — refetch so the Overview panel is not stale.
             conversation.refresh();
+            threads.refresh();
           }}
         />
       )}
@@ -794,6 +818,9 @@ export function App() {
             since={since.summary}
             matches={since.matches}
             onMoveNotes={onMoveNotes}
+            threads={threadsHere}
+            onReply={threads.reply}
+            onResolve={threads.setResolved}
             onNote={(anchor, body) =>
               here &&
               marks.update((current, at) =>

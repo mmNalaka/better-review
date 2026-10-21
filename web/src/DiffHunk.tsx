@@ -6,6 +6,8 @@ import type { HunkMatch } from "../../server/rereview";
 import { parseNoteBody, withSuggestion } from "../../server/suggestion";
 import { coveredLines, isReviewed, noteAt, notesByLastLine, notesIn } from "./marks";
 import { DiffRow } from "./DiffRow";
+import { mirrorsThread, type ReviewThread as Thread } from "../../server/threads";
+import { ReviewThread, type ThreadReply, type ThreadResolve } from "./ReviewThread";
 import type { ThemedToken } from "./highlighter";
 
 /**
@@ -83,7 +85,13 @@ interface DiffHunkProps {
   /** For an edited hunk: the version you reviewed, against this one. */
   readonly edit: HunkMatch | null;
   readonly onMoveNotes: (fromId: string, to: Hunk) => void;
+  /** GitHub's threads on this hunk, by line index; undefined when there are none. */
+  readonly threads: ReadonlyMap<number, readonly Thread[]> | undefined;
+  readonly onReply: ThreadReply;
+  readonly onResolve: ThreadResolve;
 }
+
+const NO_THREADS: readonly Thread[] = [];
 
 const DELTA_MARK = { same: " ", dropped: "−", added: "+" } as const;
 
@@ -109,6 +117,9 @@ export const DiffHunk = memo(function DiffHunk({
   since,
   edit,
   onMoveNotes,
+  threads,
+  onReply,
+  onResolve,
 }: DiffHunkProps) {
   const stranded = edit ? notesIn(marks, path, edit.oldId).length : 0;
   const reviewed = isReviewed(marks, path, hunk.id);
@@ -314,7 +325,12 @@ export const DiffHunk = memo(function DiffHunk({
       )}
 
       {hunk.lines.map((line, index) => {
-        const ending = byLastLine.get(index) ?? null;
+        const onLine = threads?.get(index) ?? NO_THREADS;
+        const noted = byLastLine.get(index) ?? null;
+        // A note you published opened one of these threads: show the thread,
+        // which has the replies, rather than the same words twice.
+        const ending =
+          noted?.published && mirrorsThread(noted.body, onLine) ? null : noted;
         const picking = band !== null && index >= band.top && index <= band.bottom;
 
         return (
@@ -341,6 +357,9 @@ export const DiffHunk = memo(function DiffHunk({
                   endLineIndex: ending.endLineIndex ?? null,
                   endLineText: ending.endLineText ?? null,
                 })}
+            {onLine.map((thread) => (
+              <ReviewThread key={thread.id} thread={thread} onReply={onReply} onResolve={onResolve} />
+            ))}
           </Fragment>
         );
       })}

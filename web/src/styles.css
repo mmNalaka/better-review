@@ -1420,3 +1420,45 @@ body.picking-lines .dl-text { pointer-events: none; }
 .start-sub { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--ink); }
 .start-foot p { margin: 0 0 8px; }
 .start-foot p:last-child { margin-bottom: 0; }
+
+/* GitHub's own review threads: public already, so drawn apart from your
+   flagged notes — accent rail, not the flag colour. */
+.gh-thread {
+  margin: 4px 0 6px 22px; padding: 6px 10px;
+  border: 1px solid var(--line); border-left: 2px solid var(--accent); border-radius: 4px;
+  background: var(--surface-2);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 12px;
+}
+
+.gh-thread.resolved, .gh-thread.outdated { border-left-color: var(--faint); }
+
+.gh-thread-head {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0;
+  font: inherit; text-align: left; cursor: pointer;
+  background: transparent; border: 0; padding: 0; color: inherit;
+}
+
+.gh-thread-head .dl-comment-where { display: inline; margin: 0; }
+.gh-thread-caret { color: var(--faint); font-size: 10px; width: 10px; }
+
+.gh-thread-peek {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--muted);
+}
+
+.gh-comment { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.gh-comment:last-of-type { border-bottom: 0; }
+.gh-comment .markdown { margin-top: 4px; }
+
+.gh-reply { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+
+.gh-reply textarea {
+  font: inherit; line-height: 1.5; resize: vertical;
+  padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--surface); color: inherit;
+}
+
+.gh-thread .dl-comment-row button:disabled { opacity: .5; cursor: default; }
+
+.gh-unplaced { padding: 6px 10px 2px 0; border-bottom: 1px solid var(--line); }
+.gh-unplaced .eyebrow { display: block; margin: 0 0 2px 22px; }

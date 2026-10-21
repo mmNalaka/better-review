@@ -7,6 +7,8 @@ import { noteAt } from "./marks";
 import { DiffHunk, type NoteAnchor, type Rows } from "./DiffHunk";
 import { tokenise } from "./highlighter";
 import type { ThemeName } from "./themes";
+import { placeThreads, type ReviewThread as Thread } from "../../server/threads";
+import { ReviewThread, type ThreadReply, type ThreadResolve } from "./ReviewThread";
 
 /**
  * Ticket 14: the changed hunks, beside the whole file rather than instead of it.
@@ -77,6 +79,10 @@ interface DiffPaneProps {
   /** Rewrites of earlier hunks, by the new hunk's `markKey`. */
   readonly matches: ReadonlyMap<string, HunkMatch>;
   readonly onMoveNotes: (fromId: string, to: Hunk) => void;
+  /** GitHub's review threads on this file. */
+  readonly threads: readonly Thread[];
+  readonly onReply: ThreadReply;
+  readonly onResolve: ThreadResolve;
 }
 
 export function DiffPane({
@@ -90,6 +96,9 @@ export function DiffPane({
   since,
   matches,
   onMoveNotes,
+  threads,
+  onReply,
+  onResolve,
 }: DiffPaneProps) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [rows, setRows] = useState<ReadonlyMap<string, Rows>>(new Map());
@@ -141,6 +150,8 @@ export function DiffPane({
       alive = false;
     };
   }, [diff, theme]);
+
+  const placed = useMemo(() => placeThreads(diff?.hunks ?? [], threads), [diff, threads]);
 
   const open = useCallback((anchor: NoteAnchor, existing: LineNote | null) => {
     setComposing(anchor);
@@ -265,6 +276,8 @@ export function DiffPane({
       onCancel: close,
       onNote,
       onMoveNotes,
+      onReply,
+      onResolve,
     }),
     [
       onJump,
@@ -277,6 +290,8 @@ export function DiffPane({
       close,
       onNote,
       onMoveNotes,
+      onReply,
+      onResolve,
     ],
   );
 
@@ -293,6 +308,14 @@ export function DiffPane({
         <span className="eyebrow">Changed hunks</span>
         <span className="n">{diff.hunks.length}</span>
       </header>
+      {placed.unplaced.length > 0 && (
+        <section className="gh-unplaced">
+          <span className="eyebrow">Not on a line shown here · {placed.unplaced.length}</span>
+          {placed.unplaced.map((thread) => (
+            <ReviewThread key={thread.id} thread={thread} onReply={onReply} onResolve={onResolve} />
+          ))}
+        </section>
+      )}
       {diff.hunks.map((hunk) => {
         const key = markKey(diff.path, hunk.id);
         const status = since?.byHunk[key];
@@ -309,6 +332,7 @@ export function DiffPane({
           draft={composing?.hunkId === hunk.id ? draft : ""}
           since={status === "new" || status === "edited" ? status : null}
           edit={status === "edited" ? (matches.get(key) ?? null) : null}
+          threads={placed.byHunk.get(hunk.id)}
           {...handlers}
         />
         );
