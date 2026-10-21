@@ -6,6 +6,7 @@ import {
   fileState,
   findings,
   flagged,
+  moveNotes,
   noteAt,
   notesIn,
   progress,
@@ -189,5 +190,44 @@ describe("findings", () => {
 
   test("ignores ticks: progress is not a finding", () => {
     expect(findings(tick(EMPTY, "a.go", A1), index)).toEqual([]);
+  });
+});
+
+describe("moveNotes", () => {
+  const to = { id: B1, lines: [{ text: "ctx" }, { text: "kept line" }, { text: "end" }] };
+
+  test("re-finds a line note by its text in the rewritten hunk", () => {
+    const marks = setLineNote(
+      EMPTY,
+      { path: "a.go", hunkId: A1, lineIndex: 4, lineText: "kept line" },
+      "why?",
+      NOW,
+    );
+    const moved = moveNotes(marks, "a.go", A1, to, LATER);
+    expect(notesIn(moved, "a.go", A1)).toEqual([]);
+    expect(noteAt(moved, "a.go", B1, 1)?.body).toBe("why?");
+  });
+
+  test("a note whose line is gone becomes a note about the hunk", () => {
+    const marks = setLineNote(
+      EMPTY,
+      { path: "a.go", hunkId: A1, lineIndex: 0, lineText: "vanished" },
+      "why?",
+      NOW,
+    );
+    expect(noteAt(moveNotes(marks, "a.go", A1, to, LATER), "a.go", B1, null)?.body).toBe("why?");
+  });
+
+  test("appends to a note already on the target rather than replacing it", () => {
+    let marks = note(EMPTY, "a.go", A1, null, "first");
+    marks = note(marks, "a.go", B1, null, "second");
+    const moved = moveNotes(marks, "a.go", A1, to, LATER);
+    expect(noteAt(moved, "a.go", B1, null)?.body).toBe("second\n\nfirst");
+  });
+
+  test("leaves notes on other hunks and files alone", () => {
+    let marks = note(EMPTY, "a.go", A2, null, "other hunk");
+    marks = note(marks, "b.go", A1, null, "other file");
+    expect(moveNotes(marks, "a.go", A1, to, LATER)).toEqual(marks);
   });
 });
