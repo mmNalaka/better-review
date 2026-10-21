@@ -23,7 +23,7 @@ export interface Range {
   readonly end: Position;
 }
 
-interface Location {
+export interface Location {
   readonly uri: string;
   readonly range: Range;
 }
@@ -41,6 +41,12 @@ export interface CallHierarchyItem {
   readonly selectionRange: Range;
   readonly kind: number;
   readonly data?: unknown;
+}
+
+export interface IncomingCall {
+  readonly from: CallHierarchyItem;
+  /** Where in `from` the calls are, in `from`'s own file. */
+  readonly fromRanges: readonly Range[];
 }
 
 export interface DocumentSymbol {
@@ -217,6 +223,34 @@ class LspClient {
       "textDocument/prepareCallHierarchy",
       { textDocument: { uri }, position },
     );
+    return result ?? [];
+  }
+
+  /** As incomingCalls, keeping where in each caller the call is made. */
+  async incomingCallSites(item: CallHierarchyItem): Promise<readonly IncomingCall[]> {
+    const result = await this.conn.sendRequest<IncomingCall[] | null>(
+      "callHierarchy/incomingCalls",
+      { item },
+    );
+    return result ?? [];
+  }
+
+  /** Every use of a symbol — the fallback for one that is not callable. */
+  async references(
+    absolutePath: string,
+    language: LanguageId,
+    position: Position,
+  ): Promise<readonly Location[]> {
+    await this.initialize();
+    const first = !this.opened.has(pathToFileURL(absolutePath).href);
+    const uri = await this.didOpen(absolutePath, language);
+    const ask = () =>
+      this.conn.sendRequest<Location[] | null>("textDocument/references", {
+        textDocument: { uri },
+        position,
+        context: { includeDeclaration: false },
+      });
+    const result = first ? await this.withRetry(ask, FILE_READY_BUDGET_MS) : await ask();
     return result ?? [];
   }
 
