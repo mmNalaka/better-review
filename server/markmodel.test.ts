@@ -8,7 +8,11 @@ import {
   NOTE_MAX,
   noteKey,
   parseMarkFile,
+  PASSES_MAX,
+  lastPass,
+  recordPass,
   type MarkFile,
+  type ReviewPass,
 } from "./markmodel";
 
 const PR = { owner: "acme", repo: "auth", number: 146 } as const;
@@ -40,6 +44,7 @@ const file = (parts: Record<string, unknown>) => ({
   ...PR,
   hunks: {},
   notes: {},
+  passes: [],
   ...parts,
 });
 
@@ -197,5 +202,89 @@ describe("migration from version 1", () => {
 
   test("still refuses a version it does not know", () => {
     expect(() => parseMarkFile({ ...file({}), version: 99 }, PR)).toThrow(MarkError);
+  });
+});
+
+const HEAD = "a".repeat(40);
+const BASE = "b".repeat(40);
+
+const pass = (over: Partial<ReviewPass> = {}): ReviewPass => ({
+  headSha: HEAD,
+  mergeBase: BASE,
+  at: AT,
+  hunks: { "service/scim.go": [ID] },
+  ...over,
+});
+
+describe("passes", () => {
+  test("reads a version 2 file as having none", () => {
+    const parsed = parseMarkFile({ ...file({}), version: 2, passes: undefined }, PR);
+    expect(parsed.version).toBe(MARK_VERSION);
+    expect(parsed.passes).toEqual([]);
+  });
+
+  test("round-trips a pass", () => {
+    const parsed = parseMarkFile(file({ passes: [pass()] }), PR);
+    expect(parsed.passes).toEqual([pass()]);
+  });
+
+  test("rejects a short sha, since a pass must name one exact commit", () => {
+    expect(() => parseMarkFile(file({ passes: [pass({ headSha: "abc1234" })] }), PR)).toThrow(
+      MarkError,
+    );
+  });
+
+  test("rejects a pass hunk id that is not one", () => {
+    expect(() =>
+      parseMarkFile(file({ passes: [pass({ hunks: { "a.go": ["nope"] } })] }), PR),
+    ).toThrow(MarkError);
+  });
+
+  test("rejects a pass path that escapes the repo", () => {
+    expect(() =>
+      parseMarkFile(file({ passes: [pass({ hunks: { "../x.go": [ID] } })] }), PR),
+    ).toThrow(MarkError);
+  });
+
+  test("rejects more passes than are kept", () => {
+    const many = Array.from({ length: PASSES_MAX + 1 }, (_, i) =>
+      pass({ headSha: i.toString(16).padStart(40, "0") }),
+    );
+    expect(() => parseMarkFile(file({ passes: many }), PR)).toThrow(MarkError);
+  });
+});
+
+describe("recordPass", () => {
+  const empty = emptyMarkFile(PR);
+
+  test("appends, and the newest is the last pass", () => {
+    const second = pass({ headSha: "c".repeat(40) });
+    const marks = recordPass(recordPass(empty, pass()), second);
+    expect(marks.passes).toHaveLength(2);
+    expect(lastPass(marks)).toEqual(second);
+  });
+
+  test("a second pass at the same head replaces the first", () => {
+    const later = pass({ at: "2026-09-01T00:00:00.000Z" });
+    const marks = recordPass(recordPass(empty, pass()), later);
+    expect(marks.passes).toEqual([later]);
+  });
+
+  test("keeps only the newest passes", () => {
+    let marks = empty;
+    for (let i = 0; i < PASSES_MAX + 5; i++) {
+      marks = recordPass(marks, pass({ headSha: i.toString(16).padStart(40, "0") }));
+    }
+    expect(marks.passes).toHaveLength(PASSES_MAX);
+    expect(lastPass(marks)?.headSha).toBe((PASSES_MAX + 4).toString(16).padStart(40, "0"));
+  });
+
+  test("does not change the file it was given", () => {
+    recordPass(empty, pass());
+    expect(empty.passes).toEqual([]);
+  });
+
+  test("has no last pass before the first one", () => {
+    expect(lastPass(empty)).toBeNull();
   });
 });

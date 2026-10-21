@@ -9,9 +9,16 @@
  * belongs to a hunk. A note is a comment and belongs to a **line**, so it can
  * be read where it was written, the way a pull request review reads. Both stay
  * content-addressed: the anchor is a hunk id, never a line number.
+ *
+ * Version 3 adds passes: the head you last finished reviewing at, and which
+ * hunks it had. That is what lets a re-review after a push say what is new,
+ * rather than leaving you to tell new hunks from ones you never reached.
  */
 
-export const MARK_VERSION = 2;
+export const MARK_VERSION = 3;
+
+/** Enough history to compare against; older passes are never read. */
+export const PASSES_MAX = 20;
 
 /** A note is a line of reasoning, not a document. */
 export const NOTE_MAX = 4000;
@@ -68,6 +75,17 @@ export interface LineNote {
   readonly published: PublishedNote | null;
 }
 
+/** One finished pass over the pull request, at one head. */
+export interface ReviewPass {
+  readonly headSha: string;
+  /** The fork point the pass was diffed from, so its hunks can be rebuilt. */
+  readonly mergeBase: string;
+  /** ISO-8601. */
+  readonly at: string;
+  /** Hunk ids present at that head, per path: what you were shown. */
+  readonly hunks: Readonly<Record<string, readonly string[]>>;
+}
+
 export interface MarkFile {
   readonly version: typeof MARK_VERSION;
   readonly owner: string;
@@ -77,6 +95,8 @@ export interface MarkFile {
   readonly hunks: Readonly<Record<string, HunkMark>>;
   /** Comments, keyed by `noteKey`. */
   readonly notes: Readonly<Record<string, LineNote>>;
+  /** Finished passes, oldest first. */
+  readonly passes: readonly ReviewPass[];
 }
 
 export interface PrRef {
@@ -120,9 +140,23 @@ export const emptyMarkFile = (pr: PrRef): MarkFile => ({
   number: pr.number,
   hunks: {},
   notes: {},
+  passes: [],
 });
 
+/** The pass a re-review compares against: the most recent one. */
+export const lastPass = (marks: MarkFile): ReviewPass | null => marks.passes.at(-1) ?? null;
+
+/**
+ * Append a finished pass. A second pass at the same head replaces the first —
+ * it is the same baseline, seen again — and only the newest PASSES_MAX stay.
+ */
+export function recordPass(marks: MarkFile, pass: ReviewPass): MarkFile {
+  const earlier = marks.passes.filter((existing) => existing.headSha !== pass.headSha);
+  return { ...marks, passes: [...earlier, pass].slice(-PASSES_MAX) };
+}
+
 const ID = /^[0-9a-f]{16}$/;
+const COMMIT = /^[0-9a-f]{40}$/;
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -222,6 +256,39 @@ function parseNote(value: unknown, key: string): LineNote {
   };
 }
 
+function requireCommit(value: unknown, what: string): string {
+  const sha = requireString(value, what, 64);
+  if (!COMMIT.test(sha)) throw new MarkError(`${what} is not a full commit sha: "${sha}"`);
+  return sha;
+}
+
+function parsePass(value: unknown, index: number): ReviewPass {
+  if (!isObject(value)) throw new MarkError(`Pass ${index} is not an object`);
+  if (!isObject(value.hunks)) throw new MarkError(`Pass ${index}: hunks must be an object`);
+
+  const hunks: Record<string, readonly string[]> = {};
+  let count = 0;
+  for (const [path, ids] of Object.entries(value.hunks)) {
+    if (!Array.isArray(ids)) throw new MarkError(`Pass ${index}: hunks of ${path} must be a list`);
+    count += ids.length;
+    hunks[requireRepoPath(path)] = ids.map((id) => requireHunkId(id, "pass hunk id"));
+  }
+  if (count > MARKS_MAX) throw new MarkError(`Pass ${index} has more than ${MARKS_MAX} hunks`);
+
+  return {
+    headSha: requireCommit(value.headSha, "headSha"),
+    mergeBase: requireCommit(value.mergeBase, "mergeBase"),
+    at: requireString(value.at, "at", 40),
+    hunks,
+  };
+}
+
+function parsePasses(value: unknown): readonly ReviewPass[] {
+  if (!Array.isArray(value)) throw new MarkError("passes must be a list");
+  if (value.length > PASSES_MAX) throw new MarkError(`More than ${PASSES_MAX} passes`);
+  return value.map(parsePass);
+}
+
 /**
  * Version 1 kept one note inside each hunk mark. It never recorded a line, so
  * the note becomes one about the whole hunk rather than a guess at a line.
@@ -254,7 +321,15 @@ function migrateFromV1(input: Record<string, unknown>, pr: PrRef): MarkFile {
     };
   }
 
-  return { version: MARK_VERSION, owner: pr.owner, repo: pr.repo, number: pr.number, hunks, notes };
+  return {
+    version: MARK_VERSION,
+    owner: pr.owner,
+    repo: pr.repo,
+    number: pr.number,
+    hunks,
+    notes,
+    passes: [],
+  };
 }
 
 /**
@@ -271,7 +346,8 @@ export function parseMarkFile(input: unknown, pr: PrRef): MarkFile {
   }
 
   if (input.version === 1) return migrateFromV1(input, pr);
-  if (input.version !== MARK_VERSION) {
+  // Version 2 is version 3 without passes: nothing to convert, only to add.
+  if (input.version !== MARK_VERSION && input.version !== 2) {
     throw new MarkError(`Unsupported marks version: ${String(input.version)}`);
   }
   if (!isObject(input.hunks)) throw new MarkError("hunks must be an object");
@@ -289,5 +365,15 @@ export function parseMarkFile(input: unknown, pr: PrRef): MarkFile {
   const notes: Record<string, LineNote> = {};
   for (const [key, value] of noteEntries) notes[key] = parseNote(value, key);
 
-  return { version: MARK_VERSION, owner: pr.owner, repo: pr.repo, number: pr.number, hunks, notes };
+  const passes = input.version === 2 ? [] : parsePasses(input.passes);
+
+  return {
+    version: MARK_VERSION,
+    owner: pr.owner,
+    repo: pr.repo,
+    number: pr.number,
+    hunks,
+    notes,
+    passes,
+  };
 }
