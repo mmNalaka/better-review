@@ -20,6 +20,7 @@ import { buildTagsFor } from "./buildtags";
 import { hasBuild, serveAsset } from "./static";
 import { allHunks, fileDiff, indexHunks } from "./diff";
 import { walkBlastRadius } from "./rings";
+import { pinPasses, sinceReport } from "./since";
 import { compareFile, fileHistory } from "./history";
 import type { ReviewPayload } from "./types";
 
@@ -65,6 +66,7 @@ function requireRelativePath(url: URL): string {
 }
 
 const SHA = /^[0-9a-f]{7,40}$/;
+const FULL_SHA = /^[0-9a-f]{40}$/;
 
 /** Optional `commit=` — reviewing one commit rather than the whole PR. */
 function optionalCommit(url: URL): string | null {
@@ -127,6 +129,21 @@ async function jsonBody(request: Request): Promise<unknown> {
   }
 }
 
+/**
+ * Keep every passed head alive in the clone. Best effort: marks need no clone,
+ * and a save must not fail because the repo is not on this machine — but a
+ * failure is logged, since it means a later re-review may have less to say.
+ */
+async function pinSavedPasses(pr: PrRef, passes: Parameters<typeof pinPasses>[2]): Promise<void> {
+  const dir = await findClone(pr.owner, pr.repo);
+  if (!dir) return;
+  try {
+    await pinPasses(dir, pr.number, passes);
+  } catch (cause) {
+    console.warn(`Could not pin review passes for ${pr.owner}/${pr.repo}#${pr.number}:`, cause);
+  }
+}
+
 const routes: Record<string, (url: URL, request: Request) => Promise<Response>> = {
   "/api/review": async (url) => {
     const ref = url.searchParams.get("pr");
@@ -161,8 +178,46 @@ const routes: Record<string, (url: URL, request: Request) => Promise<Response>> 
     const pr = requirePr(url);
     if (request.method === "GET") return json(await readMarks(MARKS_DIR, pr));
     if (request.method !== "PUT") throw new BadRequest("Use GET or PUT");
+    const before = await readMarks(MARKS_DIR, pr);
     await writeMarks(MARKS_DIR, pr, (await jsonBody(request)) as never);
-    return json(await readMarks(MARKS_DIR, pr));
+    const saved = await readMarks(MARKS_DIR, pr);
+    // Most saves are a tick; only a changed pass list has refs to move.
+    if (JSON.stringify(before.passes) !== JSON.stringify(saved.passes)) {
+      await pinSavedPasses(pr, saved.passes);
+    }
+    return json(saved);
+  },
+
+  /**
+   * How the pull request moved since one finished pass: new commits, whether
+   * it was force-pushed or rebased, and which new hunks rewrite old ones. The
+   * pass is looked up in the saved marks, never taken from the request.
+   */
+  "/api/since": async (url) => {
+    const { dir, owner, repo } = await resolveClone(url);
+    const number = requireInteger(url, "pr");
+    const rev = url.searchParams.get("rev");
+    if (!rev) throw new BadRequest("Missing rev");
+    const from = url.searchParams.get("from");
+    if (!from || !FULL_SHA.test(from)) throw new BadRequest("from must be a full commit sha");
+
+    const cached = reviewCache.get(cacheKey(owner, repo, number, rev));
+    if (!cached) throw new BadRequest("Open the pull request first");
+    const marks = await readMarks(MARKS_DIR, { owner, repo, number });
+    const pass = marks.passes.find((entry) => entry.headSha === from);
+    if (!pass) throw new BadRequest(`No finished pass at ${from.slice(0, 7)}`);
+
+    return json(await sinceReport(dir, pass, cached.pr, cached.commits));
+  },
+
+  /**
+   * The head GitHub has now, for noticing a push while the page is open. One
+   * API call and no fetch: the review reloads only when you ask it to.
+   */
+  "/api/head": async (url) => {
+    const pr = requirePr(url);
+    const meta = await fetchPullRequest(pr.owner, pr.repo, pr.number);
+    return json({ headSha: meta.headSha });
   },
 
   /**
