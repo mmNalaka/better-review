@@ -1462,3 +1462,8 @@ body.picking-lines .dl-text { pointer-events: none; }
 
 .gh-unplaced { padding: 6px 10px 2px 0; border-bottom: 1px solid var(--line); }
 .gh-unplaced .eyebrow { display: block; margin: 0 0 2px 22px; }
+
+/* A thread jumped to from the open-threads counter, briefly. */
+.gh-thread { transition: box-shadow .4s ease; }
+.gh-thread.flash { box-shadow: 0 0 0 2px var(--accent); }
+.counts-link:disabled { cursor: default; opacity: .6; }

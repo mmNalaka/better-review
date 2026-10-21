@@ -116,6 +116,7 @@ export function Help({ onClose }: HelpProps) {
             Threads already on the pull request appear under the lines they were left on, with an
             accent-coloured rail, apart from your own flagged notes. Resolved threads start folded. Outdated
             ones, whose line has gone, are listed at the top of the file's hunks.
+            Click <b>open threads</b> at the top to jump to the next one, file by file.
           </p>
           <p>
             <b>Reply</b>, <b>Resolve</b> and <b>Unresolve</b> post to GitHub at once. They are
