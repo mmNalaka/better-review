@@ -1,5 +1,14 @@
 import { buildConversation, type ConversationEntry, type RawIssueComment, type RawReview } from "./conversation";
 import { toThreadInput, type ReviewSubmission } from "./publish";
+import {
+  buildThreads,
+  toComment,
+  toThread,
+  type RawThread,
+  type RawThreadComment,
+  type ReviewThread,
+  type ThreadComment,
+} from "./threads";
 import type { PullRequest } from "./types";
 
 export class GitHubError extends Error {
@@ -265,6 +274,96 @@ async function ghApiList<T>(path: string): Promise<readonly T[]> {
   } catch {
     throw new GitHubError("gh api returned output that was not JSON");
   }
+}
+
+/**
+ * Review threads: GraphQL, not REST, because only GraphQL knows whether a
+ * thread is resolved or outdated, and replying or resolving needs its node id.
+ */
+const THREAD_FIELDS = `
+  id path line startLine originalLine diffSide isResolved isOutdated
+  comments(first: 100) {
+    nodes { databaseId author { login avatarUrl } body createdAt url }
+  }`;
+
+const THREADS = `query ($owner: String!, $repo: String!, $number: Int!, $after: String) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $number) {
+      reviewThreads(first: 100, after: $after) {
+        pageInfo { hasNextPage endCursor }
+        nodes { ${THREAD_FIELDS} }
+      }
+    }
+  }
+}`;
+
+const REPLY = `mutation ($threadId: ID!, $body: String!) {
+  addPullRequestReviewThreadReply(input: { pullRequestReviewThreadId: $threadId, body: $body }) {
+    comment { databaseId author { login avatarUrl } body createdAt url }
+  }
+}`;
+
+const RESOLVE = `mutation ($threadId: ID!) {
+  resolveReviewThread(input: { threadId: $threadId }) { thread { ${THREAD_FIELDS} } }
+}`;
+
+const UNRESOLVE = `mutation ($threadId: ID!) {
+  unresolveReviewThread(input: { threadId: $threadId }) { thread { ${THREAD_FIELDS} } }
+}`;
+
+/** A busy pull request can hold hundreds of threads; never stop at the first page. */
+const MAX_THREAD_PAGES = 20;
+
+interface ThreadPage {
+  repository: {
+    pullRequest: {
+      reviewThreads: {
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        nodes: readonly (RawThread | null)[];
+      };
+    } | null;
+  } | null;
+}
+
+export async function fetchReviewThreads(
+  owner: string,
+  repo: string,
+  number: number,
+): Promise<readonly ReviewThread[]> {
+  const collected: RawThread[] = [];
+  let after: string | null = null;
+
+  for (let page = 0; page < MAX_THREAD_PAGES; page += 1) {
+    const data: ThreadPage = await graphql<ThreadPage>(THREADS, { owner, repo, number, after });
+    const threads = data.repository?.pullRequest?.reviewThreads;
+    if (!threads) throw new GitHubError(`${owner}/${repo}#${number} not found`);
+    collected.push(...threads.nodes.filter((node): node is RawThread => node !== null));
+    if (!threads.pageInfo.hasNextPage) break;
+    after = threads.pageInfo.endCursor;
+  }
+  return buildThreads(collected);
+}
+
+/** Posts at once — a reply is not held for a review, the same as on GitHub. */
+export async function replyToThread(threadId: string, body: string): Promise<ThreadComment> {
+  const data = await graphql<{
+    addPullRequestReviewThreadReply: { comment: RawThreadComment | null };
+  }>(REPLY, { threadId, body });
+  const comment = data.addPullRequestReviewThreadReply.comment;
+  if (!comment) throw new GitHubError("GitHub accepted the reply but returned no comment");
+  return toComment(comment);
+}
+
+export async function setThreadResolved(
+  threadId: string,
+  resolved: boolean,
+): Promise<ReviewThread> {
+  if (resolved) {
+    const data = await graphql<{ resolveReviewThread: { thread: RawThread } }>(RESOLVE, { threadId });
+    return toThread(data.resolveReviewThread.thread);
+  }
+  const data = await graphql<{ unresolveReviewThread: { thread: RawThread } }>(UNRESOLVE, { threadId });
+  return toThread(data.unresolveReviewThread.thread);
 }
 
 /** The description and conversation GitHub already holds — shaping lives in `conversation.ts`. */
