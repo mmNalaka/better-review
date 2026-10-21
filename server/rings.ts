@@ -7,7 +7,7 @@ import { git } from "./git";
  *
  * Ticket 10 settled the shape from measurement - walk outward until the
  * frontier runs dry, capped on symbol count and elapsed time rather than depth,
- * because fan-out is what runs away. On acme/auth#146 the whole depth-3 radius
+ * because fan-out is what runs away. On a 23-file Go PR the whole depth-3 radius
  * took 2.7 s and the frontier collapsed 111 -> 8 -> 5 -> 3.
  *
  * Ticket 09 settled what a file with no ring says.

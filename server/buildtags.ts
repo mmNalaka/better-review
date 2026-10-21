@@ -4,7 +4,7 @@ import { join } from "node:path";
 /**
  * Go build tags the PR's own changed files need.
  *
- * Measured in ticket 13: `acme/auth#146` has 44 of 155 symbols behind
+ * Measured in ticket 13: a real Go PR had 44 of 155 symbols behind
  * `//go:build integration_test`, and gopls answers with a hard error rather
  * than an empty result for every one of them. Passing the tag makes them
  * resolvable.
