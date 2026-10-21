@@ -284,6 +284,7 @@ body {
 .trail-home { color: var(--accent); }
 .trail-home:hover, .hop:hover { background: var(--surface-3); }
 .hop.here { color: var(--ink); font-weight: 600; }
+.hop.ahead { opacity: 0.55; }
 .hop.stale { color: var(--del); text-decoration: line-through; }
 .hop-line { color: var(--faint); font-size: 10.5px; }
 .trail .sep { color: var(--faint); }

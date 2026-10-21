@@ -1,32 +1,36 @@
-import type { Hop } from "./hops";
+import type { Walk } from "./hops";
 
 /**
  * The chain from ticket 03 and 07: hops carry no digit (you can count the
  * links) but each carries the ring marker of the code it sits in, so leaving
- * changed code is visible without new vocabulary.
+ * changed code is visible without new vocabulary. Hops ahead of where you
+ * stand stay on the chain, dimmed, until you diverge from them.
  */
 
 interface TrailProps {
-  readonly trail: readonly Hop[];
+  readonly walk: Walk;
   readonly onJump: (index: number) => void;
   readonly onBackToChanges: () => void;
 }
 
 const label = (path: string) => path.slice(path.lastIndexOf("/") + 1);
 
-export function Trail({ trail, onJump, onBackToChanges }: TrailProps) {
-  if (trail.length === 0) return null;
+export function Trail({ walk, onJump, onBackToChanges }: TrailProps) {
+  const { hops, at } = walk;
+  if (hops.length === 0) return null;
 
   return (
     <div className="trail">
       <button className="trail-home" onClick={onBackToChanges}>
         ← the changes
       </button>
-      {trail.map((hop, index) => (
+      {hops.map((hop, index) => (
         <span key={`${hop.path}:${hop.line}:${index}`} className="trail-link">
           <span className="sep">›</span>
           <button
-            className={`hop${index === trail.length - 1 ? " here" : ""}${hop.stale ? " stale" : ""}`}
+            className={`hop${index === at ? " here" : index > at ? " ahead" : ""}${
+              hop.stale ? " stale" : ""
+            }`}
             onClick={() => onJump(index)}
             title={hop.stale ? "That symbol has moved" : `${hop.path}:${hop.line + 1}`}
           >
@@ -36,9 +40,9 @@ export function Trail({ trail, onJump, onBackToChanges }: TrailProps) {
           </button>
         </span>
       ))}
-      {trail.length > 1 && (
-        <span className="hopcount">
-          {trail.length - 1} {trail.length === 2 ? "hop" : "hops"} in
+      {at > 0 && (
+        <span className="hopcount" title="[ and ] step back and forward along the trail">
+          {at} {at === 1 ? "hop" : "hops"} in
         </span>
       )}
     </div>

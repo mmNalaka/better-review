@@ -34,24 +34,45 @@ import { Explorer } from "./Explorer";
 import { findings, setFileReviewed, setLineNote, toggleHunk } from "./marks";
 import { useMarks } from "./useMarks";
 import { Trail } from "./Trail";
-import { decodeTrail, encodeTrail, pushHop, startTrail, truncateTo, type Hop } from "./hops";
+import {
+  NO_WALK,
+  decodeTrail,
+  encodeTrail,
+  hereOf,
+  moveTo,
+  pushHop,
+  startTrail,
+  type Hop,
+  type Walk,
+} from "./hops";
 
 const DEFAULT_PR = "sitoo/auth#146";
 
 const readParams = () => new URLSearchParams(location.search);
 
-function writeParams(pr: string, trail: readonly Hop[]) {
+const refOf = (pr: ReviewPayload["pr"]) => `${pr.owner}/${pr.repo}#${pr.number}`;
+
+/**
+ * Every move along the trail is its own browser history entry, so Back,
+ * Forward and the mouse's side buttons retrace what you looked at.
+ */
+function writeParams(pr: string, walk: Walk, how: "push" | "replace") {
   const url = new URL(location.href);
   url.searchParams.set("pr", pr);
-  if (trail.length > 0) url.searchParams.set("trail", encodeTrail(trail));
-  else url.searchParams.delete("trail");
-  history.replaceState(null, "", url);
+  const { trail, at } = encodeTrail(walk);
+  for (const [key, value] of [["trail", trail], ["at", at]] as const) {
+    if (value === null) url.searchParams.delete(key);
+    else url.searchParams.set(key, value);
+  }
+  if (url.href === location.href) return;
+  if (how === "push") history.pushState(null, "", url);
+  else history.replaceState(null, "", url);
 }
 
 export function App() {
   const [ref, setRef] = useState(() => readParams().get("pr") ?? DEFAULT_PR);
   const [review, setReview] = useState<ReviewPayload | null>(null);
-  const [trail, setTrail] = useState<readonly Hop[]>([]);
+  const [walk, setWalk] = useState<Walk>(NO_WALK);
   const [body, setBody] = useState<{ path: string; text: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -123,7 +144,7 @@ export function App() {
     };
   }, [review, commitFilter]);
 
-  const here = trail.at(-1) ?? null;
+  const here = hereOf(walk);
   const isChanged = here !== null && changedPaths.has(here.path);
 
   // A comparison belongs to one file: moving to another file ends it.
@@ -131,20 +152,22 @@ export function App() {
 
   const prShas = useMemo(() => new Set(review?.commits.map((commit) => commit.sha)), [review]);
 
-  const open = useCallback(async (prRef: string, restore: string | null) => {
+  const open = useCallback(async (prRef: string, restore: string | null, restoreAt: string | null) => {
     setBusy(true);
     setError(null);
     setNotice(null);
     setReview(null);
-    setTrail([]);
+    setWalk(NO_WALK);
     setBody(null);
     try {
       const payload = await loadReview(prRef);
       setReview(payload);
       // Normalise: a pasted link is long and noisy in the field and the URL.
-      setRef(`${payload.pr.owner}/${payload.pr.repo}#${payload.pr.number}`);
+      setRef(refOf(payload.pr));
       const paths = new Set(payload.changed.map((file) => file.path));
-      setTrail(decodeTrail(restore, paths));
+      const restored = decodeTrail(restore, restoreAt, paths);
+      setWalk(restored);
+      writeParams(refOf(payload.pr), restored, "replace");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -155,7 +178,7 @@ export function App() {
   // Restore whatever the URL described, once.
   useEffect(() => {
     const params = readParams();
-    void open(params.get("pr") ?? DEFAULT_PR, params.get("trail"));
+    void open(params.get("pr") ?? DEFAULT_PR, params.get("trail"), params.get("at"));
   }, [open]);
 
   // Load the file the current hop points at.
@@ -210,9 +233,31 @@ export function App() {
   const flags = useMemo(() => findings(marks.marks, marks.index), [marks.marks, marks.index]);
 
 
+  /** Move along the trail, or start a new one; a click in the diff no longer pins the view. */
+  const go = useCallback(
+    (next: Walk) => {
+      setWalk(next);
+      setJumpLine(null);
+      if (review) writeParams(refOf(review.pr), next, "push");
+    },
+    [review],
+  );
+
+  // Browser Back and Forward: the URL already describes the walk to stand on.
   useEffect(() => {
-    if (review) writeParams(ref, trail);
-  }, [review, ref, trail]);
+    const onPop = () => {
+      const params = readParams();
+      const pr = params.get("pr") ?? DEFAULT_PR;
+      if (!review || pr !== refOf(review.pr)) {
+        void open(pr, params.get("trail"), params.get("at"));
+        return;
+      }
+      setWalk(decodeTrail(params.get("trail"), params.get("at"), changedPaths));
+      setJumpLine(null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [review, changedPaths, open]);
 
   const ringOf = useCallback(
     (path: string): Hop["ring"] => (changedPaths.has(path) ? "changed" : "unknown"),
@@ -226,9 +271,9 @@ export function App() {
   const selectFile = useCallback(
     (path: string) => {
       setNotice(null);
-      setTrail(startTrail({ path, line: 0, ring: ringOf(path) }));
+      go(startTrail({ path, line: 0, ring: ringOf(path) }));
     },
-    [ringOf],
+    [ringOf, go],
   );
 
   /** Step through the changed files without reaching for the mouse. */
@@ -273,7 +318,9 @@ export function App() {
     k: () => stepFile(-1),
     n: () => void stepHunk(1),
     p: () => void stepHunk(-1),
-    Backspace: () => setTrail([]),
+    Backspace: () => go(NO_WALK),
+    "[": () => go(moveTo(walk, walk.at - 1)),
+    "]": () => go(moveTo(walk, walk.at + 1)),
     "/": () => document.querySelector<HTMLInputElement>(".prform input")?.select(),
     v: toggleReviewedHere,
     c: () => setShowFindings((open) => !open),
@@ -310,13 +357,14 @@ export function App() {
         } else if (target.path === here.path && target.line === here.line) {
           setNotice("Already at the definition.");
         } else {
-          setTrail((current) =>
-            pushHop(current, current.length - 1, {
-              path: target.path,
-              line: target.line,
-              ring: ringOf(target.path),
-            }),
-          );
+          const next = pushHop(walk, line, {
+            path: target.path,
+            line: target.line,
+            ring: ringOf(target.path),
+          });
+          // The entry you leave remembers the line you clicked, so Back lands on it.
+          writeParams(refOf(review.pr), { ...next, at: next.at - 1 }, "replace");
+          go(next);
         }
       } catch (cause) {
         setNotice(cause instanceof Error ? cause.message : String(cause));
@@ -324,7 +372,7 @@ export function App() {
         setResolving(false);
       }
     },
-    [review, here, ringOf],
+    [review, here, walk, ringOf, go],
   );
 
   return (
@@ -335,7 +383,7 @@ export function App() {
           className="prform"
           onSubmit={(event) => {
             event.preventDefault();
-            void open(ref, null);
+            void open(ref, null, null);
           }}
         >
           <input
@@ -348,7 +396,7 @@ export function App() {
               if (!pasted) return;
               event.preventDefault();
               setRef(pasted);
-              void open(pasted, null);
+              void open(pasted, null, null);
             }}
             placeholder="Paste a PR link, or owner/repo#123"
             aria-label="Pull request"
@@ -369,7 +417,7 @@ export function App() {
                 className="badge filter"
                 onClick={() => {
                   setCommitFilter(null);
-                  setTrail([]);
+                  go(NO_WALK);
                 }}
                 title="Back to the whole pull request"
               >
@@ -405,9 +453,9 @@ export function App() {
       {error && <p className="banner">{error}</p>}
 
       <Trail
-        trail={trail}
-        onJump={(index) => setTrail((current) => truncateTo(current, index))}
-        onBackToChanges={() => setTrail([])}
+        walk={walk}
+        onJump={(index) => go(moveTo(walk, index))}
+        onBackToChanges={() => go(NO_WALK)}
       />
 
       {review && (
@@ -502,7 +550,7 @@ export function App() {
           selected={commitFilter}
           onSelect={(sha) => {
             setCommitFilter(sha);
-            setTrail([]);
+            go(NO_WALK);
           }}
           onClose={() => setShowCommits(false)}
         />
