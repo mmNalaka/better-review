@@ -229,3 +229,18 @@ export const loadHead = (
   repo: string,
   pr: number,
 ): Promise<{ headSha: string }> => getJson("/api/head", { owner, repo, pr });
+
+export type { CallSite, CallersResult } from "../../server/callers";
+import type { CallersResult } from "../../server/callers";
+
+/** Every caller of the symbol at a position, or every reference to it. */
+export const loadCallers = (
+  owner: string,
+  repo: string,
+  pr: number,
+  rev: string,
+  path: string,
+  line: number,
+  character: number,
+): Promise<CallersResult | { unsupported: true; reason: string }> =>
+  getJson("/api/callers", { owner, repo, pr, rev, path, line, character });

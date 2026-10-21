@@ -20,6 +20,7 @@ import { buildTagsFor } from "./buildtags";
 import { hasBuild, serveAsset } from "./static";
 import { allHunks, fileDiff, indexHunks } from "./diff";
 import { walkBlastRadius } from "./rings";
+import { findCallers } from "./callers";
 import { pinPasses, sinceReport } from "./since";
 import { compareFile, fileHistory } from "./history";
 import type { ReviewPayload } from "./types";
@@ -469,6 +470,29 @@ const routes: Record<string, (url: URL, request: Request) => Promise<Response>> 
           unsupported: true,
           reason: error.message,
         });
+      }
+      throw error;
+    }
+  },
+
+  /** Every caller of the symbol at a position — the hop upward, on demand. */
+  "/api/callers": async (url) => {
+    const { dir, owner, repo } = await resolveClone(url);
+    const path = requireRelativePath(url);
+    const number = requireInteger(url, "pr");
+    const rev = url.searchParams.get("rev");
+    if (!rev) throw new BadRequest("Missing rev");
+    const position = { line: requireInteger(url, "line"), character: requireInteger(url, "character") };
+
+    const cached = reviewCache.get(cacheKey(owner, repo, number, rev));
+    if (!cached) throw new BadRequest("Open the pull request first");
+    const worktree = await ensureWorktree(dir, owner, repo, number, rev);
+    const buildTags = await buildTagsFor(worktree.dir, cached.changed.map((file) => file.path));
+    try {
+      return json(await findCallers(worktree.dir, path, position, buildTags));
+    } catch (error) {
+      if (error instanceof UnsupportedLanguageError) {
+        return json({ unsupported: true, reason: error.message });
       }
       throw error;
     }
