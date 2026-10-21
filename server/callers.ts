@@ -114,7 +114,7 @@ export function sitesFromReferences(
 }
 
 /** Reads each file once, however many sites it has. */
-function lineReader(repoDir: string): ReadLine {
+export function lineReader(repoDir: string): ReadLine {
   const files = new Map<string, readonly string[]>();
   return (path, line) => {
     let lines = files.get(path);
