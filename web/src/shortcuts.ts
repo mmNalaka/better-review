@@ -17,7 +17,7 @@ export interface Shortcut {
 export const SHORTCUTS: readonly Shortcut[] = [
   { key: "j", shown: "j", does: "Next changed file", group: "Moving" },
   { key: "k", shown: "k", does: "Previous changed file", group: "Moving" },
-  { key: "n", shown: "n", does: "Next hunk in this file", group: "Moving" },
+  { key: "n", shown: "n", does: "Next hunk in this file, or next change when comparing", group: "Moving" },
   { key: "p", shown: "p", does: "Previous hunk", group: "Moving" },
   { key: "Backspace", shown: "⌫", does: "Back to the changes", group: "Moving" },
   { key: "/", shown: "/", does: "Jump to the pull request field", group: "Moving" },
@@ -25,6 +25,8 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: "v", shown: "v", does: "Mark this file reviewed, or clear it", group: "Reviewing" },
   { key: "c", shown: "c", does: "Open the findings drawer", group: "Reviewing" },
   { key: "s", shown: "s", does: "Show the commits", group: "Reviewing" },
+  { key: "o", shown: "o", does: "Show the description and comments", group: "Reviewing" },
+  { key: "h", shown: "h", does: "History of this file, to compare a past version", group: "Reviewing" },
 
   { key: "1", shown: "1", does: "Diff beside the file", group: "Views" },
   { key: "2", shown: "2", does: "Diff only", group: "Views" },

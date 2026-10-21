@@ -3,14 +3,14 @@ import {
   changedFiles,
   changedFilesInCommit,
   commits,
-  fetchPrHead,
+  fetchPrRefs,
   findClone,
   listTree,
   mergeBase,
   parentOf,
   readBlob,
 } from "./git";
-import { fetchPullRequest, parsePrRef, postReview } from "./github";
+import { fetchPrConversation, fetchPullRequest, parsePrRef, postReview } from "./github";
 import { planReview, REVIEW_EVENTS, reviewSubmission, type ReviewEvent } from "./publish";
 import { MarkError, type PrRef } from "./markmodel";
 import { readMarks, writeMarks } from "./markstore";
@@ -20,6 +20,7 @@ import { buildTagsFor } from "./buildtags";
 import { hasBuild, serveAsset } from "./static";
 import { allHunks, fileDiff, indexHunks } from "./diff";
 import { walkBlastRadius } from "./rings";
+import { compareFile, fileHistory } from "./history";
 import type { ReviewPayload } from "./types";
 
 const json = (body: unknown, status = 200) =>
@@ -105,8 +106,8 @@ async function loadReview(ref: string): Promise<ReviewPayload> {
   }
 
   const meta = await fetchPullRequest(owner, repo, number);
-  const headSha = await fetchPrHead(clonePath, owner, repo, number);
-  const base = await mergeBase(clonePath, meta.baseRef, headSha);
+  const { headSha, baseSha } = await fetchPrRefs(clonePath, owner, repo, number, meta.baseRef);
+  const base = await mergeBase(clonePath, baseSha, headSha);
 
   const [changed, log] = await Promise.all([
     changedFiles(clonePath, base, headSha),
@@ -131,6 +132,16 @@ const routes: Record<string, (url: URL, request: Request) => Promise<Response>> 
     const ref = url.searchParams.get("pr");
     if (!ref) throw new BadRequest("Missing ?pr= — pass a PR URL or owner/repo#123");
     return json(await loadReview(ref));
+  },
+
+  /**
+   * The pull request's own description and conversation — its body, general
+   * comments, and review summaries GitHub already holds. Fetched fresh each
+   * time: unlike the diff, there is no head sha to key a cache on.
+   */
+  "/api/conversation": async (url) => {
+    const pr = requirePr(url);
+    return json(await fetchPrConversation(pr.owner, pr.repo, pr.number));
   },
 
   "/api/blob": async (url) => {
@@ -220,6 +231,47 @@ const routes: Record<string, (url: URL, request: Request) => Promise<Response>> 
     return json(
       await fileDiff(dir, cached.pr.mergeBase, rev, path, file.kind, cached.commits),
     );
+  },
+
+  /**
+   * Every commit that touched one file, up to the PR head, following renames.
+   * Not limited to the pull request: the point is the file's whole story.
+   */
+  "/api/history": async (url) => {
+    const { dir, owner, repo } = await resolveClone(url);
+    const path = requireRelativePath(url);
+    const number = requireInteger(url, "pr");
+    const rev = url.searchParams.get("rev");
+    if (!rev) throw new BadRequest("Missing rev");
+
+    if (!reviewCache.has(cacheKey(owner, repo, number, rev))) {
+      throw new BadRequest("Open the pull request first");
+    }
+    return json({ revisions: await fileHistory(dir, rev, path) });
+  },
+
+  /**
+   * One past version of a file beside the PR head, as aligned rows. `from` is
+   * a commit from the file's history; `fromPath` is what the file was called
+   * there, which differs from `path` across a rename.
+   */
+  "/api/compare": async (url) => {
+    const { dir, owner, repo } = await resolveClone(url);
+    const path = requireRelativePath(url);
+    const number = requireInteger(url, "pr");
+    const rev = url.searchParams.get("rev");
+    if (!rev) throw new BadRequest("Missing rev");
+    const from = url.searchParams.get("from");
+    if (!from || !SHA.test(from)) throw new BadRequest("from must be a hex sha");
+    const fromPath = url.searchParams.get("fromPath") ?? path;
+    if (fromPath.startsWith("/") || fromPath.split("/").includes("..")) {
+      throw new BadRequest("fromPath must be repo-relative and may not traverse upward");
+    }
+
+    if (!reviewCache.has(cacheKey(owner, repo, number, rev))) {
+      throw new BadRequest("Open the pull request first");
+    }
+    return json(await compareFile(dir, from, fromPath, rev, path));
   },
 
   /**

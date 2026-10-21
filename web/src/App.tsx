@@ -8,11 +8,16 @@ import {
   resolveDefinition,
   type ChangedFile,
   type FileDiff,
+  type FileRevision,
   type ReviewPayload,
 } from "./api";
 import { CommitsPanel } from "./CommitsPanel";
+import { ComparePane } from "./ComparePane";
+import { HistoryPanel } from "./HistoryPanel";
 import { Findings } from "./Findings";
 import { Help } from "./Help";
+import { Overview } from "./Overview";
+import { useConversation } from "./useConversation";
 import { Branches } from "./Branches";
 import { CopyPath } from "./CopyPath";
 import { ThemePicker } from "./ThemePicker";
@@ -56,7 +61,11 @@ export function App() {
   const [mode, setMode] = useState<"split" | "diff" | "file">("split");
   const [showCommits, setShowCommits] = useState(false);
   const [showFindings, setShowFindings] = useState(false);
+  const [showOverview, setShowOverview] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  /** A past version of the open file, laid beside the head. Null: the normal panes. */
+  const [compareWith, setCompareWith] = useState<FileRevision | null>(null);
   const explorer = useExplorerWidth();
   const theme = useTheme();
   const fullscreen = useFullscreen();
@@ -80,6 +89,13 @@ export function App() {
     review?.pr.headSha ?? null,
   );
   const [resolving, setResolving] = useState(false);
+
+  /** GitHub's own description and conversation — never our findings, just what's already there. */
+  const conversation = useConversation(
+    review?.pr.owner ?? null,
+    review?.pr.repo ?? null,
+    review?.pr.number ?? null,
+  );
 
   /** What the explorer lists: the whole PR, or just the selected commit. */
   const visibleChanged = commitFilter && commitFiles ? commitFiles : (review?.changed ?? []);
@@ -109,6 +125,11 @@ export function App() {
 
   const here = trail.at(-1) ?? null;
   const isChanged = here !== null && changedPaths.has(here.path);
+
+  // A comparison belongs to one file: moving to another file ends it.
+  useEffect(() => setCompareWith(null), [here?.path, review]);
+
+  const prShas = useMemo(() => new Set(review?.commits.map((commit) => commit.sha)), [review]);
 
   const open = useCallback(async (prRef: string, restore: string | null) => {
     setBusy(true);
@@ -240,9 +261,12 @@ export function App() {
   /** Esc closes one thing at a time, nearest first. */
   const closeTop = useCallback(() => {
     if (showHelp) setShowHelp(false);
+    else if (showOverview) setShowOverview(false);
     else if (showFindings) setShowFindings(false);
     else if (showCommits) setShowCommits(false);
-  }, [showHelp, showFindings, showCommits]);
+    else if (showHistory) setShowHistory(false);
+    else if (compareWith) setCompareWith(null);
+  }, [showHelp, showOverview, showFindings, showCommits, showHistory, compareWith]);
 
   useKeys({
     j: () => stepFile(1),
@@ -254,6 +278,8 @@ export function App() {
     v: toggleReviewedHere,
     c: () => setShowFindings((open) => !open),
     s: () => setShowCommits((open) => !open),
+    o: () => setShowOverview((open) => !open),
+    h: () => here && setShowHistory((open) => !open),
     "1": () => isChanged && setMode("split"),
     "2": () => isChanged && setMode("diff"),
     "3": () => setMode("file"),
@@ -355,6 +381,13 @@ export function App() {
               <button className="counts-link" onClick={() => setShowCommits((open) => !open)}>
                 <b>{review.commits.length}</b> commits
               </button>
+              <button
+                className="counts-link"
+                onClick={() => setShowOverview((open) => !open)}
+                title="Description and comments — o"
+              >
+                <b>{conversation.entries.length}</b> comments
+              </button>
             </span>
           </>
         )}
@@ -387,13 +420,26 @@ export function App() {
                 aria-pressed={isChanged ? mode === option : option === "file"}
                 disabled={!isChanged}
                 title={isChanged ? undefined : "This file is not changed by the pull request"}
-                onClick={() => setMode(option)}
+                onClick={() => {
+                  setMode(option);
+                  setCompareWith(null);
+                }}
               >
                 {option === "split" ? "Diff + file" : option === "diff" ? "Diff only" : "Whole file"}
               </button>
             ))}
           </div>
           {here && <CopyPath path={here.path} line={here.line > 0 ? here.line : null} />}
+          {here && (
+            <button
+              className="findings-open"
+              aria-pressed={showHistory || compareWith !== null}
+              onClick={() => setShowHistory((open) => !open)}
+              title="Every commit that touched this file — h"
+            >
+              History
+            </button>
+          )}
           <button
             className={`findings-open${flags.length > 0 ? " some" : ""}`}
             aria-pressed={showFindings}
@@ -423,7 +469,30 @@ export function App() {
             selectFile(path);
             setShowFindings(false);
           }}
-          onPublished={marks.replace}
+          onPublished={(stamped) => {
+            marks.replace(stamped);
+            // A submitted review is now part of the pull request's own
+            // conversation — refetch so the Overview panel is not stale.
+            conversation.refresh();
+          }}
+        />
+      )}
+
+      {review && showOverview && (
+        <Overview pr={review.pr} conversation={conversation} onClose={() => setShowOverview(false)} />
+      )}
+
+      {review && here && showHistory && (
+        <HistoryPanel
+          pr={review.pr}
+          path={here.path}
+          prCommits={prShas}
+          selected={compareWith?.sha ?? null}
+          onCompare={(revision) => {
+            setCompareWith(revision);
+            setShowHistory(false);
+          }}
+          onClose={() => setShowHistory(false)}
         />
       )}
 
@@ -440,7 +509,7 @@ export function App() {
       )}
 
       <div
-        className={`panes mode-${isChanged ? mode : "file"}`}
+        className={`panes mode-${compareWith ? "compare" : isChanged ? mode : "file"}`}
         style={{ "--explorer-w": `${explorer.width}px` } as CSSProperties}
       >
         {review ? (
@@ -482,7 +551,16 @@ export function App() {
           title="Drag to resize · double-click to reset"
         />
 
-        {isChanged && mode !== "file" && (
+        {review && here && compareWith && (
+          <ComparePane
+            pr={review.pr}
+            path={here.path}
+            revision={compareWith}
+            theme={theme.resolved}
+            onClose={() => setCompareWith(null)}
+          />
+        )}
+        {!compareWith && isChanged && mode !== "file" && (
           <DiffPane
             diff={diff}
             loading={diffLoading}
@@ -500,7 +578,7 @@ export function App() {
             }
           />
         )}
-        {!(isChanged && mode === "diff") && (
+        {!compareWith && !(isChanged && mode === "diff") && (
         <CodePane
           path={here?.path ?? null}
           text={body && here && body.path === here.path ? body.text : null}
