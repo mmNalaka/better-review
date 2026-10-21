@@ -277,3 +277,14 @@ export const resolveThread = (
   resolved: boolean,
 ): Promise<ReviewThread> =>
   sendJson("/api/threads/resolve", { owner, repo, pr }, "POST", { threadId, resolved });
+
+export type { LeftBehind, LeftBehindReport } from "../../server/leftbehind";
+import type { LeftBehindReport } from "../../server/leftbehind";
+
+/** Changed signatures, and their callers on lines the PR did not touch. */
+export const loadLeftBehind = (
+  owner: string,
+  repo: string,
+  pr: number,
+  rev: string,
+): Promise<LeftBehindReport> => getJson("/api/left-behind", { owner, repo, pr, rev });

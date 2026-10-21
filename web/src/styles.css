@@ -1462,3 +1462,29 @@ body.picking-lines .dl-text { pointer-events: none; }
 
 .gh-unplaced { padding: 6px 10px 2px 0; border-bottom: 1px solid var(--line); }
 .gh-unplaced .eyebrow { display: block; margin: 0 0 2px 22px; }
+
+/* ── callers left behind by a changed signature ──────────────── */
+.left-behind-name {
+  font: inherit; font-weight: 600; color: var(--accent);
+  background: transparent; border: 0; padding: 0; cursor: pointer;
+}
+
+.left-behind-name:hover { text-decoration: underline; }
+
+.left-behind-where {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 400; color: var(--faint);
+}
+
+.left-behind h4 .badge { margin-left: auto; }
+
+.left-behind-sig {
+  display: flex; flex-direction: column; gap: 1px;
+  margin: 4px 16px 6px; padding: 4px 0;
+  border: 1px solid var(--line); border-radius: 4px; overflow-x: auto;
+  background: var(--surface);
+}
+
+.left-behind-sig code { padding: 0 8px; font-size: 11.5px; white-space: pre; }
+.left-behind-sig .out { background: color-mix(in srgb, var(--del) 13%, transparent); }
+.left-behind-sig .in  { background: color-mix(in srgb, var(--add) 13%, transparent); }
