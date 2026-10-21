@@ -92,7 +92,9 @@ the whole gesture, it loads immediately.
 - **The explorer** lists the changed files, grouped by what you have reviewed.
   `Whole repo` switches to the full tree with the changed files marked in place.
 - **Click any symbol** in the file pane to jump to its definition. Each jump adds a
-  **hop** to the trail across the top; click any hop to go back to it.
+  **hop** to the trail across the top. Click a hop, press `[` / `]`, or use the
+  browser's Back and Forward to retrace it; going back lands on the line you clicked
+  from, and the hops ahead stay until you jump somewhere new.
 - **Rings** say how far code sits from the change: `changed`, then ring 1 for its
   callers, ring 2 for theirs. It is the only number on screen.
 - **View** switches between `Diff + file`, `Diff only` and `Whole file`.
