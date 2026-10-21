@@ -111,6 +111,20 @@ export function Help({ onClose }: HelpProps) {
         </section>
 
         <section className="help-part">
+          <h3>Existing review threads</h3>
+          <p>
+            Threads already on the pull request appear under the lines they were left on, with an
+            accent-coloured rail, apart from your own flagged notes. Resolved threads start folded. Outdated
+            ones, whose line has gone, are listed at the top of the file's hunks.
+          </p>
+          <p>
+            <b>Reply</b>, <b>Resolve</b> and <b>Unresolve</b> post to GitHub at once. They are
+            not held for your review. Threads are hidden while you are narrowed to one commit,
+            because GitHub numbers their lines against the head.
+          </p>
+        </section>
+
+        <section className="help-part">
           <h3>Commenting</h3>
           <p>
             Press <b>+</b> on any line in the diff. Drag down the gutter, or shift-click another
