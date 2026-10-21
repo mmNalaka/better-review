@@ -1488,3 +1488,8 @@ body.picking-lines .dl-text { pointer-events: none; }
 .left-behind-sig code { padding: 0 8px; font-size: 11.5px; white-space: pre; }
 .left-behind-sig .out { background: color-mix(in srgb, var(--del) 13%, transparent); }
 .left-behind-sig .in  { background: color-mix(in srgb, var(--add) 13%, transparent); }
+
+/* A thread jumped to from the open-threads counter, briefly. */
+.gh-thread { transition: box-shadow .4s ease; }
+.gh-thread.flash { box-shadow: 0 0 0 2px var(--accent); }
+.counts-link:disabled { cursor: default; opacity: .6; }

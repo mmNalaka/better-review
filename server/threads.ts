@@ -151,3 +151,28 @@ export function threadWhere(thread: ReviewThread): string {
   const start = thread.startLine;
   return start !== null && start !== end ? `lines ${start}–${end}` : `line ${end}`;
 }
+
+/**
+ * The open thread after `afterId`, in reading order: files as the explorer
+ * lists them, then by line. Wraps, so repeated asks walk every open thread.
+ * Files the explorer does not list go last, by path.
+ */
+export function nextOpenThread(
+  threads: readonly ReviewThread[],
+  paths: readonly string[],
+  afterId: string | null,
+): ReviewThread | null {
+  const rank = new Map(paths.map((path, index) => [path, index]));
+  const line = (thread: ReviewThread) => thread.line ?? thread.originalLine ?? 0;
+  const open = threads
+    .filter((thread) => !thread.resolved)
+    .sort(
+      (a, b) =>
+        (rank.get(a.path) ?? paths.length) - (rank.get(b.path) ?? paths.length) ||
+        a.path.localeCompare(b.path) ||
+        line(a) - line(b),
+    );
+  if (open.length === 0) return null;
+  const at = afterId === null ? -1 : open.findIndex((thread) => thread.id === afterId);
+  return open[(at + 1) % open.length] ?? null;
+}

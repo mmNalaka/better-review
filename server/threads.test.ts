@@ -4,6 +4,7 @@ import type { Hunk } from "./diff";
 import {
   buildThreads,
   mirrorsThread,
+  nextOpenThread,
   placeThreads,
   threadWhere,
   toThread,
@@ -132,5 +133,30 @@ describe("threadWhere", () => {
     expect(threadWhere(thread({ startLine: 9 }))).toBe("lines 9–11");
     expect(threadWhere(thread({ line: null, originalLine: 5 }))).toBe("line 5");
     expect(threadWhere(thread({ line: null, originalLine: null }))).toBe("the file");
+  });
+});
+
+describe("nextOpenThread", () => {
+  const threads = [
+    thread({ id: "b2", path: "b.ts", line: 20 }),
+    thread({ id: "a9", path: "a.ts", line: 9 }),
+    thread({ id: "b1", path: "b.ts", line: 3 }),
+    thread({ id: "done", path: "a.ts", line: 1, isResolved: true }),
+    thread({ id: "z", path: "z.ts", line: 1 }),
+  ];
+  const order = ["b.ts", "a.ts"];
+
+  test("starts at the first open thread in explorer order, then by line", () => {
+    expect(nextOpenThread(threads, order, null)?.id).toBe("b1");
+  });
+
+  test("walks on, puts unlisted files last, and wraps", () => {
+    const walk = ["b1", "b2", "a9", "z"].map((id) => nextOpenThread(threads, order, id)?.id);
+    expect(walk).toEqual(["b2", "a9", "z", "b1"]);
+  });
+
+  test("starts over when the last one is gone, and is null with none open", () => {
+    expect(nextOpenThread(threads, order, "vanished")?.id).toBe("b1");
+    expect(nextOpenThread([threads[3]!], order, null)).toBeNull();
   });
 });

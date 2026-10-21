@@ -69,7 +69,7 @@ export const ReviewThread = memo(function ReviewThread({
     .join(" ");
 
   return (
-    <div className={classes}>
+    <div className={classes} data-thread={thread.id}>
       <button className="gh-thread-head" onClick={() => setOpen((now) => !now)} aria-expanded={open}>
         <span className="gh-thread-caret" aria-hidden="true">
           {open ? "▾" : "▸"}
