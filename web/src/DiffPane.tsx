@@ -83,7 +83,12 @@ interface DiffPaneProps {
   readonly threads: readonly Thread[];
   readonly onReply: ThreadReply;
   readonly onResolve: ThreadResolve;
+  /** A thread to bring into view; `n` changes on every ask, so asking twice scrolls twice. */
+  readonly focusThread: { readonly id: string; readonly n: number } | null;
 }
+
+/** How long a thread jumped to stays highlighted. */
+const FLASH_MS = 1200;
 
 export function DiffPane({
   diff,
@@ -99,6 +104,7 @@ export function DiffPane({
   threads,
   onReply,
   onResolve,
+  focusThread,
 }: DiffPaneProps) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [rows, setRows] = useState<ReadonlyMap<string, Rows>>(new Map());
@@ -152,6 +158,19 @@ export function DiffPane({
   }, [diff, theme]);
 
   const placed = useMemo(() => placeThreads(diff?.hunks ?? [], threads), [diff, threads]);
+
+  // Waits for the diff that holds the thread: the jump may have opened its file.
+  useEffect(() => {
+    if (!focusThread || !threads.some((thread) => thread.id === focusThread.id)) return;
+    const frame = requestAnimationFrame(() => {
+      const element = document.querySelector(`[data-thread="${CSS.escape(focusThread.id)}"]`);
+      if (!element) return;
+      element.scrollIntoView({ block: "center", behavior: "smooth" });
+      element.classList.add("flash");
+      window.setTimeout(() => element.classList.remove("flash"), FLASH_MS);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusThread, threads, placed]);
 
   const open = useCallback((anchor: NoteAnchor, existing: LineNote | null) => {
     setComposing(anchor);

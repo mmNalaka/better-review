@@ -19,6 +19,7 @@ import { Help } from "./Help";
 import { Overview } from "./Overview";
 import { useConversation } from "./useConversation";
 import { useThreads } from "./useThreads";
+import { nextOpenThread } from "../../server/threads";
 import { Branches } from "./Branches";
 import { CopyPath } from "./CopyPath";
 import { ThemePicker } from "./ThemePicker";
@@ -153,6 +154,8 @@ export function App() {
   /** Review threads already on the diff, drawn under the lines they were left on. */
   const threads = useThreads(review?.pr ?? null);
   const openThreads = threads.threads.filter((thread) => !thread.resolved).length;
+  /** The thread last jumped to from the counter; the next click goes on from it. */
+  const [focusThread, setFocusThread] = useState<{ id: string; n: number } | null>(null);
 
   /** What the explorer lists: the whole PR, or just the selected commit. */
   const visibleChanged =
@@ -372,6 +375,26 @@ export function App() {
     },
     [ringOf, go],
   );
+
+  /**
+   * The open-threads counter: each click opens the next open thread's file and
+   * brings the thread into view. Whatever would hide it — narrowing to one
+   * commit, the new-since filter, the whole-file view — is set aside first.
+   */
+  const jumpToNextThread = useCallback(() => {
+    const next = nextOpenThread(
+      threads.threads,
+      orderedChanged.map((file) => file.path),
+      focusThread?.id ?? null,
+    );
+    if (!next) return;
+    if (commitFilter) setCommitFilter(null);
+    if (!changedPaths.has(next.path)) setSinceFilter(false);
+    if (mode === "file") setMode("split");
+    setCompareWith(null);
+    if (here?.path !== next.path) selectFile(next.path);
+    setFocusThread((current) => ({ id: next.id, n: (current?.n ?? 0) + 1 }));
+  }, [threads.threads, orderedChanged, focusThread, commitFilter, changedPaths, mode, here, selectFile]);
 
   /** Step through the changed files without reaching for the mouse. */
   const stepFile = useCallback(
@@ -613,9 +636,14 @@ export function App() {
                 <b>{conversation.entries.length}</b> comments
               </button>
               {threads.threads.length > 0 && (
-                <span title={`${threads.threads.length - openThreads} resolved`}>
+                <button
+                  className="counts-link"
+                  onClick={jumpToNextThread}
+                  disabled={openThreads === 0}
+                  title={`Jump to the next open thread · ${threads.threads.length - openThreads} resolved`}
+                >
                   <b>{openThreads}</b> open threads
-                </span>
+                </button>
               )}
               {threads.error && (
                 <button className="counts-link" onClick={threads.refresh} title={threads.error}>
@@ -870,6 +898,7 @@ export function App() {
             matches={since.matches}
             onMoveNotes={onMoveNotes}
             threads={threadsHere}
+            focusThread={focusThread}
             onReply={threads.reply}
             onResolve={threads.setResolved}
             onNote={(anchor, body) =>

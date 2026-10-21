@@ -126,6 +126,7 @@ does not pretend otherwise.
 Review threads already on the pull request appear inline under the lines they were left
 on, so you read the diff with what others said beside it. Resolved threads start folded.
 Outdated ones, whose line is no longer in the diff, are listed above the file's hunks.
+Click **open threads** at the top to jump to the next open one; each click moves on.
 **Reply**, **Resolve** and **Unresolve** post to GitHub immediately and are not held for
 your review. A note you published that opened a thread is shown once, as the thread.
 
