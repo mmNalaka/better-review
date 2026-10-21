@@ -1,0 +1,54 @@
+{
+  "repo": "/Users/nalaka.manathunga/code/auth",
+  "commit": "fd7e21b",
+  "server": "gopls",
+  "maxDepth": 3,
+  "changedCodeFiles": [
+    "app/constants.go (1 lines)",
+    "repository/mysql/user.go (2 lines)",
+    "service/password_test.go (7 lines)"
+  ],
+  "projectReadyMs": 5199,
+  "level0Ms": 1473,
+  "bfsMs": 693,
+  "totalMsFromSpawn": 8122,
+  "incomingCallsRequestsIssued": 4,
+  "msPerIncomingCallsRequest": 173.1,
+  "symbolsPerDepth": [
+    {
+      "depth": 0,
+      "n": 2,
+      "ms": 1473
+    },
+    {
+      "depth": 1,
+      "n": 1,
+      "ms": 129,
+      "incomingCallsRequests": 2
+    },
+    {
+      "depth": 2,
+      "n": 1,
+      "ms": 367,
+      "incomingCallsRequests": 1
+    },
+    {
+      "depth": 3,
+      "n": 1,
+      "ms": 196,
+      "incomingCallsRequests": 1
+    }
+  ],
+  "totalSymbolsInRadius": 5,
+  "filesInRadius": 4,
+  "level0Symbols": [
+    "repository/mysql/user.go:35 CreateUser",
+    "service/password_test.go:12 TestPasswordComplexity"
+  ],
+  "fileDepths": [
+    "L0 repository/mysql/user.go",
+    "L0 service/password_test.go",
+    "L1 service/scim.go",
+    "L2 generated/handler/api_scim_handler.go"
+  ]
+}

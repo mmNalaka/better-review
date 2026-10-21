@@ -1,0 +1,46 @@
+{
+  "repo": "/Users/nalaka.manathunga/code/iam-mono",
+  "commit": "b6e213d",
+  "server": "tsgo",
+  "maxDepth": 3,
+  "changedCodeFiles": [
+    "services/iam-api/src/e2e/types/schema.d.ts (207 lines)",
+    "services/iam-api/src/middleware/rolesv2.test.ts (20 lines)",
+    "services/iam-api/src/middleware/rolesv2.ts (1 lines)",
+    "services/iam-api/src/modules/role-assignments/role-assignments.controller.test.ts (161 lines)",
+    "services/iam-api/src/modules/role-assignments/role-assignments.controller.ts (28 lines)"
+  ],
+  "projectReadyMs": 5620,
+  "level0Ms": 150,
+  "bfsMs": 8,
+  "totalMsFromSpawn": 10176,
+  "incomingCallsRequestsIssued": 2,
+  "msPerIncomingCallsRequest": 3.9,
+  "symbolsPerDepth": [
+    {
+      "depth": 0,
+      "n": 1,
+      "ms": 150
+    },
+    {
+      "depth": 1,
+      "n": 1,
+      "ms": 6,
+      "incomingCallsRequests": 1
+    },
+    {
+      "depth": 2,
+      "n": 0,
+      "ms": 1,
+      "incomingCallsRequests": 1
+    }
+  ],
+  "totalSymbolsInRadius": 2,
+  "filesInRadius": 1,
+  "level0Symbols": [
+    "services/iam-api/src/modules/role-assignments/role-assignments.controller.test.ts:671 makeAuthedAppWithAccount"
+  ],
+  "fileDepths": [
+    "L0 services/iam-api/src/modules/role-assignments/role-assignments.controller.test.ts"
+  ]
+}
